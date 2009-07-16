@@ -421,8 +421,16 @@ class Plugin(BasePlugin, Cacheable):
             return
         if isinstance(value, DateTime):
             value = datetime.datetime(
-                dt.year(), dt.month(), dt.day(),
-                dt.hour(), dt.minute(), dt.second())
+                value.year(), value.month(), value.day(),
+                value.hour(), value.minute(), value.second())
+
+        # if value is a string, make sure it does not exceed the limit
+        # (truncate if necessary--this is better than breaking the
+        # application)
+        if isinstance(value, basestring):
+            cspec = getattr(model.User.__table__.columns, name).type
+            if isinstance(cspec, rdb.String):
+                value = value[:cspec.length]
         setattr(user, name, value)
 
     def setPropertiesForUser(self, user, propertysheet):
