@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<import-steps>
+  <import-step id="pas.plugins.sqlalchemy.uninstall" version="1"
+               handler="pas.plugins.sqlalchemy.setuphandlers.uninstall"
+               title="Uninstall PAS plugins">
+  </import-step>
+</import-steps>

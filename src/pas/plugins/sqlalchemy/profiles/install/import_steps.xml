@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<import-steps>
+  <import-step id="pas.plugins.sqlalchemy.install" version="1"
+               handler="pas.plugins.sqlalchemy.setuphandlers.install"
+               title="Install PAS plugins">
+  </import-step>
+</import-steps>
