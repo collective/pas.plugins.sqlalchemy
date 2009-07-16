@@ -7,6 +7,12 @@ define a named scoped session "pas.plugins.sqlalchemy".
 Install plugins using the included GenericSetup profile. Note that
 tables will created automatically on installation.
 
+Memberdata
+----------
+
+The users table has an extensive number of metadata fields; it's on
+the to-do to figure out a nice way to make this pluggable.
+
 History
 -------
 
