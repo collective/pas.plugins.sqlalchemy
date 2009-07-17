@@ -1,9 +1,8 @@
 import copy
-import random
-import md5
-import string
-import sqlalchemy as rdb
 import datetime
+import logging
+import sqlalchemy as rdb
+import traceback
 
 from AccessControl import ClassSecurityInfo
 from AccessControl.SecurityManagement import getSecurityManager
@@ -38,21 +37,39 @@ from Products.PlonePAS.interfaces.group import IGroupManagement
 from Products.PlonePAS.sheet import MutablePropertySheet
 from Products.PlonePAS.plugins.group import PloneGroup
 
+from pas.plugins.sqlalchemy import model
 from z3c.saconfig import named_scoped_session
 Session = named_scoped_session("pas.plugins.sqlalchemy")
 
-from pas.plugins.sqlalchemy import model
-
-def generate_salt():
-    return ''.join(random.sample(string.letters, 12))
-
-def encrypt(word, salt):
-    return md5.md5(word+salt).hexdigest()
+logger = logging.getLogger("pas.plugins.sqlalchemy")
 
 def safeencode(v):
     if isinstance(v, unicode):
         return v.encode('utf-8')
     return v
+
+def graceful_recovery(default=None, log_args=True):
+    def decorator(func):
+        def wrapper(*args, **kwargs):
+            try:
+                value = func(*args, **kwargs)
+            except rdb.exc.SQLAlchemyError, e:
+                if log_args is False:
+                    args = ()
+                    kwargs = {}
+                logger.critical(
+                    "caught SQL-exception: "
+                    "%s (in method ``%s``; arguments were %s)\n\n%s" % (
+                    str(e),
+                    func.__name__, ", ".join(
+                        [repr(arg) for arg in args] +
+                        ["%s=%s" % (name, repr(value))
+                         for (name, value) in kwargs.items()]),
+                    traceback.format_exc()))
+                return default
+            return value
+        return wrapper
+    return decorator
 
 class Plugin(BasePlugin, Cacheable):
     meta_type = 'SQLAlchemy user/group/prop manager'
@@ -71,6 +88,7 @@ class Plugin(BasePlugin, Cacheable):
     #
 
     security.declarePrivate('doChangeUser')
+    @graceful_recovery()
     def doChangeUser(self, login, password, **kw):
         # userSetPassword in PlonePAS expects a RuntimeError when a
         # plugin doesn't hold the user.
@@ -80,6 +98,7 @@ class Plugin(BasePlugin, Cacheable):
             raise RuntimeError, "User does not exist: %s" % login
 
     security.declarePrivate('doDeleteUser')
+    @graceful_recovery()
     def doDeleteUser(self, login):
         try:
             self.removeUser(login)
@@ -90,6 +109,7 @@ class Plugin(BasePlugin, Cacheable):
     #
     # IPasswordSetCapability implementation
     #
+    @graceful_recovery(False)
     def allowPasswordSet(self, id):
         session = Session()
         user = session.query(model.User).filter_by(name=id).first()
@@ -102,6 +122,7 @@ class Plugin(BasePlugin, Cacheable):
     #
 
     security.declarePrivate('authenticateCredentials')
+    @graceful_recovery(log_args=False)
     def authenticateCredentials(self, credentials):
         login = credentials.get('login')
         password = credentials.get('password')
@@ -120,6 +141,7 @@ class Plugin(BasePlugin, Cacheable):
     # IUserEnumerationPlugin implementation
     #
     security.declarePrivate('enumerateUsers')
+    @graceful_recovery(())
     def enumerateUsers(self, id=None, login=None, exact_match=False,
                        sort_by=None, max_results=None, **kw):
         """See IUserEnumerationPlugin."""
@@ -234,6 +256,7 @@ class Plugin(BasePlugin, Cacheable):
         return True
 
     security.declarePrivate('addUser')
+    @graceful_recovery(log_args=False)
     def addUser(self, user_id, login_name, password):
         session = Session()
         new_user = model.User(login=user_id, name=login_name)
@@ -241,6 +264,7 @@ class Plugin(BasePlugin, Cacheable):
         session.add(new_user)
 
     security.declarePrivate('removeUser')
+    @graceful_recovery()
     def removeUser(self, user_id): # raises keyerror
         session = Session()
         user = session.query(model.User).filter_by(name=user_id).first()
@@ -250,12 +274,12 @@ class Plugin(BasePlugin, Cacheable):
         session.delete(user)
 
     security.declarePrivate('updateUserPassword')
+    @graceful_recovery(log_args=False)
     def updateUserPassword(self, user_id, login_name, password):
         session = Session()
         user = session.query(model.User).filter_by(name=user_id).first()
         if user is None:
             raise KeyError(user_id)
-
         user.set_password(password)
 
    #
@@ -321,6 +345,7 @@ class Plugin(BasePlugin, Cacheable):
 
         return True
 
+    @graceful_recovery()
     def getPrincipal(self, principal):
         session = Session()
 
@@ -342,6 +367,7 @@ class Plugin(BasePlugin, Cacheable):
 
         return principal
 
+    @graceful_recovery(())
     def getRolesForPrincipal(self, principal, request=None ):
 
         """ principal -> ( role_1, ... role_N )
@@ -369,6 +395,7 @@ class Plugin(BasePlugin, Cacheable):
         self.ZCacheable_set(roles, view_name)
         return roles
 
+    @graceful_recovery()
     def getPropertiesForUser(self, user, request=None):
         """Get property values for a user or group.
         Returns a dictionary of values or a PropertySheet.
@@ -433,6 +460,7 @@ class Plugin(BasePlugin, Cacheable):
                 value = value[:cspec.length]
         setattr(user, name, value)
 
+    @graceful_recovery()
     def setPropertiesForUser(self, user, propertysheet):
         session = Session()
         _user = session.query(model.User).filter_by(
@@ -446,6 +474,7 @@ class Plugin(BasePlugin, Cacheable):
     # IGroupsPlugin implementation
     #
 
+    @graceful_recovery(())
     def getGroupsForPrincipal( self, principal, request=None ):
         """ principal -> ( group_1, ... group_N )
 
@@ -472,6 +501,7 @@ class Plugin(BasePlugin, Cacheable):
     # IGroupsEnumeration implementation
     #        
 
+    @graceful_recovery(())
     def enumerateGroups( self, id=None
                        , exact_match=False
                        , sort_by=None
@@ -555,6 +585,7 @@ class Plugin(BasePlugin, Cacheable):
     # IGroupManagement 
     ####################
 
+    @graceful_recovery(False)
     def addGroup(self, id, **kw):
         """
         Create a group with the supplied id, roles, and groups.
@@ -569,6 +600,7 @@ class Plugin(BasePlugin, Cacheable):
 
         return True
 
+    @graceful_recovery(False)
     def addPrincipalToGroup(self, principal_id, group_id):
         """
         Add a given principal to the group.
@@ -591,6 +623,7 @@ class Plugin(BasePlugin, Cacheable):
     #
     #   IDeleteCapability implementation
     #
+    @graceful_recovery(False)
     def allowDeletePrincipal(self, principal_id):
         """True if this plugin can delete a certain group."""
 
@@ -602,6 +635,8 @@ class Plugin(BasePlugin, Cacheable):
     #
     #   IGroupCapability implementation
     #
+
+    @graceful_recovery(False)
     def allowGroupAdd(self, user_id, group_id):
         """True if this plugin will allow adding a certain user to a
         certain group."""
@@ -617,6 +652,7 @@ class Plugin(BasePlugin, Cacheable):
 
         return True
 
+    @graceful_recovery(False)
     def allowGroupRemove(self, user_id, group_id):
         """True if this plugin will allow removing a certain user from
         a certain group."""
@@ -633,6 +669,7 @@ class Plugin(BasePlugin, Cacheable):
 
         return False
 
+    @graceful_recovery(False)
     def removeGroup(self, group_id):
         """
         Remove the given group
@@ -647,6 +684,7 @@ class Plugin(BasePlugin, Cacheable):
 
         return False
 
+    @graceful_recovery(False)
     def removePrincipalFromGroup(self, principal_id, group_id):
         """
         Remove the given principal from the group; return True on success.
@@ -669,6 +707,7 @@ class Plugin(BasePlugin, Cacheable):
     # IGroupIntrospection
     ###########################
 
+    @graceful_recovery(None)
     def getGroupById(self, group_id):
         """
         Returns the portal_groupdata-ish object for a group
@@ -706,6 +745,7 @@ class Plugin(BasePlugin, Cacheable):
     # these interface methods are suspect for scalability.
     #################################
 
+    @graceful_recovery(())
     def getGroups( self ):
         """
         Returns an iteration of the available groups
@@ -715,6 +755,7 @@ class Plugin(BasePlugin, Cacheable):
         groups = session.query(model.Group).all()
         return [PloneGroup(g.name).__of__(self) for g in groups]
 
+    @graceful_recovery(())
     def getGroupIds( self ):
         """
         Returns a list of the available groups
@@ -723,6 +764,7 @@ class Plugin(BasePlugin, Cacheable):
         session = Session()
         return session.query(model.Group.name).all()
 
+    @graceful_recovery(())
     def getGroupMembers(self, group_id):
         """
         Return the members of the given group
@@ -735,6 +777,7 @@ class Plugin(BasePlugin, Cacheable):
     #
     # IUpdatePlugin implementation
     #
+    @graceful_recovery()
     def updateUserInfo(self, user, set_id, set_info):
         if set_id is not None:
             raise NotImplementedError, \
