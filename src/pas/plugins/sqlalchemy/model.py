@@ -83,7 +83,7 @@ class User(Principal):
     # memberdata property sheet
     email = Column(String(40), default=u"")
     portal_skin = Column(String(20), default=u"")
-    listed = Column(String(3), default=u"on")
+    listed = Column(Integer, default=1)
     login_time = Column(DateTime)
     last_login_time = Column(DateTime)
     fullname = Column(String(40), default=u"")
@@ -92,7 +92,7 @@ class User(Principal):
     location = Column(String(40), default=u"")
     description = Column(Text, default=u"")
     language = Column(String(20), default=u"")
-    ext_editor = Column(String(10), default="")
+    ext_editor = Column(Integer, default=0)
     wysiwyg_editor = Column(String(10), default="")
     visible_ids = Column(Integer, default=0)
     firstname = Column(String(30), default=u"")
