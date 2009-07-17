@@ -50,7 +50,7 @@ Contributors
 
   - Dorneles Treméa <deo@jarn.com> of Jarn
 
-  - Wichert Akkerman <wichert@jarn.com> of Jarn
+  - Wichert Akkerman <wichert@wiggy.net> of Simplon
 
   - Riccardo Lemmi <riccardo@reflab.it> of Reflab Srl
 
