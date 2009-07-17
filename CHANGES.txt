@@ -1,6 +1,12 @@
 Changelog
 =========
 
+next release
+------------
+
+- Changed the 'listed' and 'ext_editor' column type to 'Integer' match the
+  Plone model.
+
 0.1 (released 2009/7/17)
 ------------------------
 
