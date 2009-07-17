@@ -57,15 +57,22 @@ def graceful_recovery(default=None, log_args=True):
                 if log_args is False:
                     args = ()
                     kwargs = {}
+
+                formatted_tb = traceback.format_exc()
+
+                try:
+                    exc_str = str(e)
+                except:
+                    exc_str = "<%s at 0x%x>" % ( e.__class__.__name__, id(e))
+
                 logger.critical(
                     "caught SQL-exception: "
                     "%s (in method ``%s``; arguments were %s)\n\n%s" % (
-                    str(e),
+                    exc_str,
                     func.__name__, ", ".join(
                         [repr(arg) for arg in args] +
-                        ["%s=%s" % (name, repr(value))
-                         for (name, value) in kwargs.items()]),
-                    traceback.format_exc()))
+                        ["%s=%s" % (name, repr(value)) for (name, value) in kwargs.items()]
+                        ), formatted_tb))
                 return default
             return value
         return wrapper
