@@ -1,24 +1,33 @@
 SQLAlchemy PAS plugin
 =====================
 
+This package is a fork of the SQLPASPlugin. It uses SQLAlchemy as the
+database abstraction layer; some tests have been rewritten but most
+are preserved. It's used in production with a PostgreSQL database.
+
+Setup
+-----
+
 To configure the plugin with a database, use ``z3c.saconfig`` and
 define a named scoped session "pas.plugins.sqlalchemy".
 
-Install plugins using the included GenericSetup profile. Note that
+Example::
+
+  <include package="z3c.saconfig" file="meta.zcml" />
+  <db:engine name="pas" url="postgres://localhost/pas" />
+  <db:session name="pas.plugins.sqlalchemy" engine="pas" />
+
+Install the plugin using the included GenericSetup-profile. Note that
 tables will created automatically on installation.
+
+You can reinstall anytime to create non-existing tables. Note that
+tables are preserved on uninstallation.
 
 Memberdata
 ----------
 
 The users table has an extensive number of metadata fields; it's on
 the to-do to figure out a nice way to make this pluggable.
-
-History
--------
-
-This package is a fork of the SQLPASPlugin. It uses SQLAlchemy as the
-database abstraction layer; some tests have been rewritten but most
-are preserved.
 
 Credits
 -------
