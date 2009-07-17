@@ -1,6 +1,7 @@
 Changelog
 =========
 
-In next release...
+0.1 (released 2009/7/17)
+~~~~~~~~~~~~~~~~~~~~~~~~
 
-- Initial release
+- Initial public release.
