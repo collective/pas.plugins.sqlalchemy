@@ -20,7 +20,7 @@ class TestUserManager(basetestcase.BaseTestCase):
         self.plugin.doAddUser(self.username, self.password)
         ret = self.plugin.allowPasswordSet(self.username)
         self.assertEqual(ret, True)
-        
+
     def testRemoveUser(self):
         ret = self.plugin.enumerateUsers(id=self.username, exact_match=True)
         self.assertEqual(len(ret), 0)

@@ -7,7 +7,7 @@ from Products.PlonePAS.plugins.group import PloneGroup
 
 class TestGroupManager( basetestcase.BaseTestCase ):
     def afterSetUp(self):
-        self.group_name = "ExampleReporters"
+        self.group_name = u'gr\xfcppe'
         self.groupname = self.group_name
         self.source_groups = self.getPAS()[plugin_name]
         self.source_users  = self.getPAS()[plugin_name]

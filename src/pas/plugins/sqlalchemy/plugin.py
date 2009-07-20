@@ -48,6 +48,11 @@ def safeencode(v):
         return v.encode('utf-8')
     return v
 
+def safedecode(v):
+    if isinstance(v, str):
+        return v.decode('utf-8')
+    return v
+
 def graceful_recovery(default=None, log_args=True):
     def decorator(func):
         def wrapper(*args, **kwargs):
@@ -156,10 +161,10 @@ class Plugin(BasePlugin, Cacheable):
         session = Session()
         view_name = createViewName('enumerateUsers', id or login)
 
-        if isinstance(id, basestring):
-            id = [str(id)]
-        if isinstance(login, basestring):
-            login = [str(login)]
+        if not isinstance(id, (tuple, list)):
+            id = [id]
+        if not isinstance(login, (tuple, list)):
+            login = [login]
 
         # check cached data
         keywords = copy.deepcopy(kw)
@@ -181,7 +186,8 @@ class Plugin(BasePlugin, Cacheable):
             terms.extend(id)
         if login is not None:
             terms.extend(login)
-
+        terms = filter(None, terms)
+        
         query = session.query(model.User)
         column = model.User.name
         clause = None
@@ -189,9 +195,11 @@ class Plugin(BasePlugin, Cacheable):
         if exact_match:
             max_results = 1
             for term in terms:
+                term = safedecode(term)
                 clause = rdb.or_(clause, column.like(term))
         else:
             for term in terms:
+                term = safedecode(term)
                 clause = rdb.or_(
                     clause,
                     rdb.or_(column.ilike(term), column.contains(term)))
@@ -419,8 +427,9 @@ class Plugin(BasePlugin, Cacheable):
                 'name': user.getId()
                 }
         else:
+            username = safedecode(user.getUserName())
             user = session.query(model.User).filter_by(
-                name=user.getUserName()).first()
+                name=username).first()
             if user is not None:
                 d = user.__dict__.copy()
 
@@ -435,6 +444,11 @@ class Plugin(BasePlugin, Cacheable):
                 for name, value in d.items():
                     if isinstance(value, datetime.datetime):
                         d[name] = DateTime(str(value))
+
+                # convert unicode strings
+                for name, value in d.items():
+                    if isinstance(value, unicode):
+                        d[name] = value.encode('utf-8')
 
                 data = dict(
                     (name, value)
@@ -462,6 +476,7 @@ class Plugin(BasePlugin, Cacheable):
         # (truncate if necessary--this is better than breaking the
         # application)
         if isinstance(value, basestring):
+            value = safedecode(value)
             cspec = getattr(model.User.__table__.columns, name).type
             if isinstance(cspec, rdb.String):
                 value = value[:cspec.length]

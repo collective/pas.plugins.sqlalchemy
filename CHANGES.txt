@@ -1,6 +1,12 @@
 Changelog
 =========
 
+In next release...
+
+- Convert to and from UTF-8 and unicode. Plone uses UTF-8 internally
+  and most Python deployments will coerce using the 'ascii' codec,
+  resulting in unicode decode errors.
+
 0.2 (released 2009/7/17)
 ------------------------
 

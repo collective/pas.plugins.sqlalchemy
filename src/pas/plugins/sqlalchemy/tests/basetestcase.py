@@ -89,8 +89,8 @@ class SQLLayer:
 
 class BaseTestCase(ZopeTestCase.ZopeTestCase):
     layer = SQLLayer
-    username = 'jürgen'
-    password = 'passw0rd'
+    username = u'j\xfcrgen'
+    password = u'passw0rd'
 
     def getPAS( self ):
         return self.layer.pas

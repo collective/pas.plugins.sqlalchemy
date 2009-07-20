@@ -65,7 +65,7 @@ class TestPropertyProvider(basetestcase.BaseTestCase):
 
     def testUpdateUserInfo(self):
         info = {
-            'firstname': 'Joe',
+            'firstname': 'Jürgen',
             'lastname': 'Schmoe',
             'email': 'joe@localhost.localdomain'
         }
