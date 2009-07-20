@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 from Testing import ZopeTestCase
 from zope import component
 from zope.component import testing
@@ -87,7 +89,7 @@ class SQLLayer:
 
 class BaseTestCase(ZopeTestCase.ZopeTestCase):
     layer = SQLLayer
-    username = 'joe'
+    username = 'jürgen'
     password = 'passw0rd'
 
     def getPAS( self ):
