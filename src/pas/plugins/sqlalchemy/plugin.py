@@ -488,7 +488,7 @@ class Plugin(BasePlugin, Cacheable):
         _user = session.query(model.User).filter_by(
             name=user.getUserName()).first()
         for name, value in propertysheet.propertyItems():
-            self.doSetProperty(_user, name, value)
+            self.doSetProperty(_user, name, safeencode(value))
         view_name = createViewName('getPropertiesForUser', user) 
         cached_info = self.ZCacheable_invalidate(view_name=view_name)
 
@@ -809,7 +809,7 @@ class Plugin(BasePlugin, Cacheable):
         _user = session.query(model.User).filter_by(
             name=user.getUserName()).first()
         for name, value in set_info.items():
-            self.doSetProperty(_user, name, value)
+            self.doSetProperty(_user, name, safeencode(value))
 
         view_name = createViewName('getPropertiesForUser', user.getUserName())
         cached_info = self.ZCacheable_invalidate(view_name=view_name)
