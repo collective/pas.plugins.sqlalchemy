@@ -1,7 +1,9 @@
 import copy
 import datetime
 import logging
-import sqlalchemy as rdb
+import sqlalchemy.exc
+from sqlachemy import sql
+from sqlachemy import types
 import traceback
 
 from AccessControl import ClassSecurityInfo
@@ -24,7 +26,6 @@ from Products.PluggableAuthService.interfaces.plugins import IRoleAssignerPlugin
 from Products.PluggableAuthService.interfaces.plugins import IGroupsPlugin
 from Products.PluggableAuthService.interfaces.plugins import IGroupEnumerationPlugin
 from Products.PluggableAuthService.interfaces.plugins import IPropertiesPlugin
-from Products.PluggableAuthService.interfaces.plugins import IUpdatePlugin
 
 # PlonePAS
 from Products.PlonePAS.interfaces.plugins import IUserManagement
@@ -58,7 +59,7 @@ def graceful_recovery(default=None, log_args=True):
         def wrapper(*args, **kwargs):
             try:
                 value = func(*args, **kwargs)
-            except rdb.exc.SQLAlchemyError, e:
+            except sqlalchemy.exc.SQLAlchemyError, e:
                 if log_args is False:
                     args = ()
                     kwargs = {}
@@ -83,9 +84,14 @@ def graceful_recovery(default=None, log_args=True):
         return wrapper
     return decorator
 
+
 class Plugin(BasePlugin, Cacheable):
     meta_type = 'SQLAlchemy user/group/prop manager'
     security = ClassSecurityInfo()
+
+    principal_class = model.Principal
+    user_class = model.User
+    group_class = model.Group
 
     def __init__(self, id, title=None):
         self.id = self.id = id
@@ -104,27 +110,31 @@ class Plugin(BasePlugin, Cacheable):
     def doChangeUser(self, login, password, **kw):
         # userSetPassword in PlonePAS expects a RuntimeError when a
         # plugin doesn't hold the user.
-        try:
-            self.updateUserPassword(login, login, password)
-        except KeyError:
-            raise RuntimeError, "User does not exist: %s" % login
+        query = Session.query(self.user_class).filter_by(login=login)
+        user = query.first()
+        if user is None:
+            raise RuntimeError("User does not exist: login=%s" % login)
+        user.set_password(password)
 
     security.declarePrivate('doDeleteUser')
     @graceful_recovery()
     def doDeleteUser(self, login):
-        try:
-            self.removeUser(login)
-        except KeyError:
+        session = Session()
+        query = session.query(self.user_class).filter_by(login=login)
+        user = query.first()
+        if user is None:
             return False
+
+        session.delete(user)
         return True
 
     #
     # IPasswordSetCapability implementation
     #
     @graceful_recovery(False)
-    def allowPasswordSet(self, id):
+    def allowPasswordSet(self, userid):
         session = Session()
-        user = session.query(model.User).filter_by(name=id).first()
+        user = session.query(self.user_class).filter_by(zope_id=id).first()
         if user is not None:
             return True
         return False
@@ -143,11 +153,10 @@ class Plugin(BasePlugin, Cacheable):
             return None
 
         session = Session()
-        user = session.query(model.User).filter_by(
-            name=login).first()
+        user = session.query(model.User).filter_by(login=login).first()
 
         if user is not None and user.check_password(password):
-            return login, login
+            return (user.zope_id, user.login)
 
     #
     # IUserEnumerationPlugin implementation
@@ -161,10 +170,8 @@ class Plugin(BasePlugin, Cacheable):
         session = Session()
         view_name = createViewName('enumerateUsers', id or login)
 
-        if not isinstance(id, (tuple, list)):
-            id = [id]
-        if not isinstance(login, (tuple, list)):
-            login = [login]
+        if not (id or login):
+            return ()
 
         # check cached data
         keywords = copy.deepcopy(kw)
@@ -181,46 +188,34 @@ class Plugin(BasePlugin, Cacheable):
         if cached_info is not None:
             return cached_info
 
-        terms = []
+        query = session.query(self.user_class)
         if id is not None:
-            terms.extend(id)
+            id = safedecode(id)
+            if exact_match:
+                query=query.filter_by(zope_id=id)
+            else:
+                query=query.filter_by(zope_id.ilike("%%%s%%", id))
         if login is not None:
-            terms.extend(login)
-        terms = filter(None, terms)
+            login = safedecode(login)
+            if exact_match:
+                query=query.filter_by(login=login)
+            else:
+                query=query.filter_by(login.ilike("%%%s%%", login))
+
         
-        query = session.query(model.User)
-        column = model.User.name
-        clause = None
-
-        if exact_match:
-            max_results = 1
-            for term in terms:
-                term = safedecode(term)
-                clause = rdb.or_(clause, column.like(term))
-        else:
-            for term in terms:
-                term = safedecode(term)
-                clause = rdb.or_(
-                    clause,
-                    rdb.or_(column.ilike(term), column.contains(term)))
-
-        if exact_match and clause is None:
-            users = ()
-        else:
-            users = query.filter(clause).all()
-
         all = {}
         pas = self.aq_parent
-        for n, user in enumerate(users):
-            user_id = user.name
+        for user in query:
+            if max_results is not None and len(all) == max_results:
+                break
+
+            user_id = user.zope_id
             data = {
-                'id': safeencode(user_id),
-                'login': safeencode(user_id),
+                'id': safeencode(zope_id),
+                'login': safeencode(user.login),
                 'pluginid': self.getId(),
             }
 
-            if max_results is not None and len(all) == max_results:
-                break
 
             if kw:
                 # this is crude filtering, but better than none
@@ -243,14 +238,7 @@ class Plugin(BasePlugin, Cacheable):
                     # any problems getting a user? forget this check
                     pass
 
-            if exact_match or not terms:
-                all.setdefault(user_id, data)
-            else:
-                for term in terms:
-                    if term in user_id:
-                        all.setdefault(user_id, data)
-                        if max_results is not None and len(all) == max_results:
-                            break
+            all[user_id] = data.setdefault(user_id, data)
 
         values = tuple(all.values())
 
@@ -274,7 +262,7 @@ class Plugin(BasePlugin, Cacheable):
     @graceful_recovery(log_args=False)
     def addUser(self, user_id, login_name, password):
         session = Session()
-        new_user = model.User(login=user_id, name=login_name)
+        new_user = self.user_class(zope_id=user_id, login=login_name)
         new_user.set_password(password)
         session.add(new_user)
 
@@ -287,15 +275,6 @@ class Plugin(BasePlugin, Cacheable):
             raise KeyError(user_id)
 
         session.delete(user)
-
-    security.declarePrivate('updateUserPassword')
-    @graceful_recovery(log_args=False)
-    def updateUserPassword(self, user_id, login_name, password):
-        session = Session()
-        user = session.query(model.User).filter_by(name=user_id).first()
-        if user is None:
-            raise KeyError(user_id)
-        user.set_password(password)
 
    #
     # Allow users to change their own login name and password.
@@ -361,26 +340,11 @@ class Plugin(BasePlugin, Cacheable):
         return True
 
     @graceful_recovery()
-    def getPrincipal(self, principal):
+    def getPrincipal(self, principal_id):
         session = Session()
+        query = session.query(self.principal_class).filter_by(zope_id=principal_id)
+        return query.first()
 
-        if isinstance(principal, basestring):
-            principal_id = principal
-            principal = session.query(model.User).filter_by(
-                name=principal_id).first()
-            if principal is None:
-                principal = session.query(model.Group).filter_by(
-                    name=principal_id).first()
-        else:
-            if principal.isGroup():
-                principal_class = model.Group
-            else:
-                principal_class = model.User
-
-            principal = session.query(principal_class).filter_by(
-                name=principal.getId()).first()
-
-        return principal
 
     @graceful_recovery(())
     def getRolesForPrincipal(self, principal, request=None ):
@@ -392,17 +356,14 @@ class Plugin(BasePlugin, Cacheable):
         o May assign roles based on values in the REQUEST object, if present.
         """
 
-        principal_id = principal
-        if not isinstance(principal_id, basestring):
-            principal_id = principal.getId()
+        principal_id = principal.getId()
         view_name = createViewName('getRolesForPrincipal', principal_id)
         cached_info = self.ZCacheable_get(view_name)
         if cached_info is not None:
             return cached_info
 
         session = Session()
-
-        principal = self.getPrincipal(principal)
+        principal = self.getPrincipal(principal_id)
         if principal is None:
             return ()
 
@@ -410,50 +371,29 @@ class Plugin(BasePlugin, Cacheable):
         self.ZCacheable_set(roles, view_name)
         return roles
 
+
     @graceful_recovery()
     def getPropertiesForUser(self, user, request=None):
         """Get property values for a user or group.
         Returns a dictionary of values or a PropertySheet.
         """
 
-        view_name = createViewName('getPropertiesForUser', user.getUserName())
+        view_name = createViewName('getPropertiesForUser', user.getId())
         cached_info = self.ZCacheable_get(view_name=view_name)
         if cached_info is not None:
             return MutablePropertySheet(self.id, **cached_info)
         data = None
         session = Session()
-        if user.isGroup():
-            data = {
-                'name': user.getId()
-                }
-        else:
-            username = safedecode(user.getUserName())
-            user = session.query(model.User).filter_by(
-                name=username).first()
-            if user is not None:
-                d = user.__dict__.copy()
+        principal = session.query(self.principal_class)\
+                .filter_by(zope_id=user.getId()).first()
+        if principal is None:
+            # XXX: Should we cache a negative result?
+            return {}
 
-                # remove system attributes
-                d.pop('salt')
-                d.pop('login')
-                d.pop('password')
-                d.pop('name')
-                d.pop('groups', None)
+        # XXX We need a way to ask the principal class for the properties it supports
+        for (attr_name, prop_name) in principal._properties:
+            data[prop_name] = getattr(principal, attr_name)
 
-                # convert dates
-                for name, value in d.items():
-                    if isinstance(value, datetime.datetime):
-                        d[name] = DateTime(str(value))
-
-                # convert unicode strings
-                for name, value in d.items():
-                    if isinstance(value, unicode):
-                        d[name] = value.encode('utf-8')
-
-                data = dict(
-                    (name, value)
-                    for (name, value) in d.items()
-                    if not name.startswith('_') and value is not None)
         if data:
             self.ZCacheable_set(data, view_name=view_name)
             data.pop('id', None)
@@ -464,9 +404,10 @@ class Plugin(BasePlugin, Cacheable):
     # IMutablePropertiesPlugin implementation
     #
 
-    def doSetProperty(self, user, name, value):
-        if name == 'date_created':
-            return
+    def doSetProperty(self, principal, name, value):
+        if name not in principal._properties:
+            raise ValueError("Trying to set non-existing property")
+
         if isinstance(value, DateTime):
             value = datetime.datetime(
                 value.year(), value.month(), value.day(),
@@ -477,18 +418,19 @@ class Plugin(BasePlugin, Cacheable):
         # application)
         if isinstance(value, basestring):
             value = safedecode(value)
-            cspec = getattr(model.User.__table__.columns, name).type
-            if isinstance(cspec, rdb.String):
+            cspec = getattr(principal.__table__.columns, name).type
+            if isinstance(cspec, types.String):
                 value = value[:cspec.length]
-        setattr(user, name, value)
+        setattr(principal, name, value)
 
     @graceful_recovery()
     def setPropertiesForUser(self, user, propertysheet):
         session = Session()
-        _user = session.query(model.User).filter_by(
-            name=user.getUserName()).first()
+        principal = session.query(self.principal_class).\
+                filter_by(zope_id=user.getId()).first()
         for name, value in propertysheet.propertyItems():
-            self.doSetProperty(_user, name, value)
+            self.doSetProperty(principal, name, value)
+
         view_name = createViewName('getPropertiesForUser', user) 
         cached_info = self.ZCacheable_invalidate(view_name=view_name)
 
@@ -512,12 +454,12 @@ class Plugin(BasePlugin, Cacheable):
             principal_id = principal.getId()
 
         session = Session()
-        user = session.query(model.User).filter_by(
-            name=principal_id).first()
-        if user is None:
+        principal = session.query(self.principal_class)\
+                .filter_by(zope_id=principal_id).first()
+        if principal is None:
             return ()
 
-        return [group.name for group in user.groups]
+        return [group.name for group in principal.groups]
 
     #
     # IGroupsEnumeration implementation
@@ -570,6 +512,7 @@ class Plugin(BasePlugin, Cacheable):
           scaling issues for some implementations.
         """
 
+# XXX Fully integrate this with enumerateUsers
         session = Session()
 
         if id is None:
@@ -578,11 +521,11 @@ class Plugin(BasePlugin, Cacheable):
             statements = []
             for i in id:
                 statements.append(model.Group.name == i)
-            clause = rdb.or_( *statements )
+            clause = sql.or_( *statements )
         elif isinstance( id, (list, tuple)) and not exact_match:
-            clause = rdb.or_(*(map(model.Group.name.contains, id)))
+            clause = sql.or_(*(map(model.Group.name.contains, id)))
         elif not exact_match:
-            clause = rdb.or_(
+            clause = sql.or_(
                 model.Group.name.contains(id),
                 model.Group.name.ilike(id))
         else:
@@ -617,7 +560,7 @@ class Plugin(BasePlugin, Cacheable):
         if self.enumerateGroups(id):
             raise KeyError, 'Duplicate group ID: %s' % id
 
-        group = model.Group(id)
+        group = self.group_class(zope_id=id)
         Session().add(group)
 
         return True
@@ -630,16 +573,17 @@ class Plugin(BasePlugin, Cacheable):
         """
 
         session = Session()
-        group = session.query(model.Group).filter_by(name=group_id).first()
-
-        user = session.query(model.User).filter_by(
-            name=principal_id).first()
-
-        if group is None or user is None:
+        group = session.query(self.group_class).filter_by(zope_id=group_id).first()
+        if group is None:
             return False
 
-        group.users.append(user)
+        principal = session.query(self.principal_class)\
+                .filter_by(zope_id=principal_id).first()
 
+        if principal is None:
+            return False
+
+        group.members.append(principal)
         return True
 
     #
@@ -649,10 +593,7 @@ class Plugin(BasePlugin, Cacheable):
     def allowDeletePrincipal(self, principal_id):
         """True if this plugin can delete a certain group."""
 
-        if self.getUserById(principal_id) or self.getGroupById(principal_id):
-            return True
-
-        return False
+        return self.getPrincipal(principal_id) is not None
 
     #
     #   IGroupCapability implementation
@@ -664,15 +605,15 @@ class Plugin(BasePlugin, Cacheable):
         certain group."""
 
         session = Session()
-        group = session.query(model.Group).filter_by(name=group_id).first()
-
-        if group is None:
+        groups = session.query(self.group_class).filter_by(zope_id=group_id).count()
+        if not groups:
             return False
 
-        if user_id in [user.name for user in group.users]:
+        if user_id in [member.zope_id for member in group.members]:
             return False
 
         return True
+
 
     @graceful_recovery(False)
     def allowGroupRemove(self, user_id, group_id):
@@ -691,6 +632,7 @@ class Plugin(BasePlugin, Cacheable):
 
         return False
 
+
     @graceful_recovery(False)
     def removeGroup(self, group_id):
         """
@@ -699,7 +641,7 @@ class Plugin(BasePlugin, Cacheable):
         """
 
         session = Session()
-        group = session.query(model.Group).filter_by(name=group_id).first()
+        group = session.query(self.group_class).filter_by(zope_id=group_id).first()
         if group is not None:
             session.delete(group)
             return True
@@ -714,15 +656,15 @@ class Plugin(BasePlugin, Cacheable):
 
         session = Session()
 
-        group = session.query(model.Group).filter_by(
-            name=group_id).first()
-        user = session.query(model.User).filter_by(
-            name=principal_id).first()
+        group = session.query(self.group_class)\
+                .filter_by(zope_id=group_id).first()
+        user = session.query(self.principal_class)\
+                .filter_by(zope_id=principal_id).first()
 
         if group is None or user is None:
             return False
 
-        group.users.remove(user)
+        group.members.remove(user)
         return True
 
     ###########################
@@ -774,7 +716,7 @@ class Plugin(BasePlugin, Cacheable):
         """
 
         session = Session()
-        groups = session.query(model.Group).all()
+        groups = session.query(self.group_class).all()
         return [PloneGroup(g.name).__of__(self) for g in groups]
 
     @graceful_recovery(())
@@ -784,7 +726,7 @@ class Plugin(BasePlugin, Cacheable):
         """
 
         session = Session()
-        return session.query(model.Group.name).all()
+        return [row[0] for row in session.query(self.group_class.zope_id.name).all()]
 
     @graceful_recovery(())
     def getGroupMembers(self, group_id):
@@ -793,26 +735,11 @@ class Plugin(BasePlugin, Cacheable):
         """
 
         session = Session()
-        group = session.query(model.Group).filter_by(name=group_id).first()
-        return [user.name for user in group.users]
+        group = session.query(self.group_class).filter_by(zope_id=group_id).first()
+        if group is None:
+            return []
+        return [member.zope_id for member in group.membres]
 
-    #
-    # IUpdatePlugin implementation
-    #
-    @graceful_recovery()
-    def updateUserInfo(self, user, set_id, set_info):
-        if set_id is not None:
-            raise NotImplementedError, \
-                  "Cannot currently rename the user id of a user"
-
-        session = Session()
-        _user = session.query(model.User).filter_by(
-            name=user.getUserName()).first()
-        for name, value in set_info.items():
-            self.doSetProperty(_user, name, value)
-
-        view_name = createViewName('getPropertiesForUser', user.getUserName())
-        cached_info = self.ZCacheable_invalidate(view_name=view_name)
 
     # PlonePAS expects plugins implementing IRoleAssignerPlugin to
     # implement addRole. (In addRole in pas).  The method is not
@@ -824,6 +751,7 @@ class Plugin(BasePlugin, Cacheable):
         """ We do not manage roles.
         """
         raise AttributeError
+
 
 classImplements(
     Plugin,
@@ -837,7 +765,6 @@ classImplements(
     IRoleAssignerPlugin,
     IAssignRoleCapability,
     IPropertiesPlugin,
-    IUpdatePlugin,
     IMutablePropertiesPlugin,
     IGroupsPlugin,
     IGroupEnumerationPlugin,

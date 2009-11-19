@@ -3,6 +3,7 @@
 # File: model.py
 #
 # Copyright (c) InQuant GmbH
+# Copyright (c) 2009 Wichert Akkerman
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -18,40 +19,41 @@
 #  along with this program; if not, write to the Free Software
 #  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-__author__    = """Stefan Eletzhofer <stefan.eletzhofer@inquant.de>"""
-__docformat__ = 'plaintext'
-__revision__  = "$Revision: 3823 $"
-__version__   = '$Revision: 3823 $'[11:-2]
-
-import random
-import string
-import sha
-import datetime
-
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import Table, Column, Integer, String, Boolean, DateTime, TIMESTAMP
-from sqlalchemy import Text, Float, ForeignKey, Sequence
-from sqlalchemy.orm import relation
+from sqlalchemy import orm
+from sqlalchemy import schema
+from sqlalchemy import types
+from sqlalchemy import Table
 from sqlalchemy.ext.associationproxy import association_proxy
+from sqlalchemy.ext.declarative import synonym_for
 
-Base = declarative_base()
+BaseObject = declarative_base()
 
-user_groups = Table('user_groups', Base.metadata,
-    Column('user_id', Integer, ForeignKey('users.id')),
-    Column('group_id', Integer, ForeignKey('groups.id'))
+
+group_member_table = Table('group_member', BaseObject.metadata,
+    schema.Column('group_id', types.Integer(), schema.ForeignKey('group.id'))
+    schema.Column('principal_id', types.Integer(), schema.ForeignKey('principal.id')),
 )
 
-class Principal(Base):
-    __tablename__ = "principals"
 
-    id = Column(Integer, Sequence("principals_id"), primary_key=True)
+class Principal(BaseObject):
+    __tablename__ = "principal"
 
-class RoleAssignment(Base):
-    __tablename__ = "role_assignments"
+    id = schema.Column(types.Integer(), types.Sequence("principals_id"), primary_key=True)
+    type = schema.Column(types.String(5), nullable=False, default="user")
+    zope_id = schema.Column(types.String(16), nullable=False, unique=True)
 
-    id = Column(Integer, Sequence("role_assignment_id"), primary_key=True)
-    principal_id = Column(Integer, ForeignKey(Principal.id))
-    name = Column(String(64))
+    __mapper_args__ = dict(polymorphic_on=type)
+    _properties = [ ("zope_id", "id" )]
+    
+
+
+class RoleAssignment(BaseObject):
+    __tablename__ = "role_assignment"
+
+    id = schema.Column(types.Integer(), types.Sequence("role_assignment_id"), primary_key=True)
+    principal_id = schema.Column(types.Integer(), schema.ForeignKey(Principal.id))
+    name = schema.Column(types.String(64))
 
     def __init__(self, name):
         self.name = name
@@ -60,106 +62,87 @@ class RoleAssignment(Base):
         return "<RoleAssignment id=%s principal_id=%d name=%s>" % (
             self.id, self.principal_id, self.name)
 
+
 class User(Principal):
-    __tablename__ = "users"
+    __tablename__ = "user"
+    __mapper_args__ = dict(polymorphic_identity="user")
 
-    id = Column(
-        Integer,
-        ForeignKey(Principal.id),
-        Sequence("principals_id"),
-        primary_key=True)
+    user_id = schema.Column("id", types.Integer(), schema.ForeignKey(Principal.id),
+            primary_key=True)
 
-    login = Column(String, unique=True)
-    name = Column(String, unique=True)
-    password = Column(String)
-    salt = Column(String(12))
-    enabled = Column(Boolean)
+    login = schema.Column(types.String(64), unique=True)
+    password = schema.Column("_password", types.String(64))
+    enabled = schema.Column(types.Boolean())
 
     # roles
-    _roles =  relation(
+    _roles =  orm.relation(
         RoleAssignment, collection_class=set, cascade="all, delete, delete-orphan")
     roles = association_proxy("_roles", "name")
 
     # memberdata property sheet
-    email = Column(String(40), default=u"")
-    portal_skin = Column(String(20), default=u"")
-    listed = Column(Integer, default=1)
-    login_time = Column(DateTime)
-    last_login_time = Column(DateTime)
-    fullname = Column(String(40), default=u"")
-    error_log_update = Column(Float)
-    home_page = Column(String(40), default=u"")
-    location = Column(String(40), default=u"")
-    description = Column(Text, default=u"")
-    language = Column(String(20), default=u"")
-    ext_editor = Column(Integer, default=0)
-    wysiwyg_editor = Column(String(10), default="")
-    visible_ids = Column(Integer, default=0)
-    firstname = Column(String(30), default=u"")
-    lastname = Column(String(30), default=u"")
-    join_time = Column(DateTime)
-    gender = Column(String(10), default=u"")
-    city = Column(String(20), default=u"")
-    date_created = Column(DateTime, nullable=False)
-    date_of_birth = Column(DateTime)
-    date_updated = Column(TIMESTAMP, nullable=True)
-    genres = Column(String(20), default=u"")
-    street = Column(String(40), default=u"")
-    house_number = Column(String(8), default=u"")
-    zip_code = Column(String(5), default=u"")
-    sport = Column(String(20), default=u"")
-    car = Column(String(20), default=u"")
-    income = Column(String(15), default=u"")
-    family_status = Column(String(15), default=u"")
-    education = Column(String(25), default=u"")
-    flags = Column(Integer, default=0)
-    country = Column(String(20), default=u"")
-    cell_number = Column(String(15), default=u"")
+    email = schema.Column(types.String(40), default=u"")
+    portal_skin = schema.Column(types.String(20), default=u"")
+    listed = schema.Column(types.Integer(), default=1)
+    login_time = schema.Column(types.DateTime())
+    last_login_time = schema.Column(types.DateTime())
+    fullname = schema.Column(types.String(40), default=u"")
+    error_log_update = schema.Column(types.Float())
+    home_page = schema.Column(types.String(40), default=u"")
+    location = schema.Column(types.String(40), default=u"")
+    description = schema.Column(types.Text(), default=u"")
+    language = schema.Column(types.String(20), default=u"")
+    ext_editor = schema.Column(types.Integer(), default=0)
+    wysiwyg_editor = schema.Column(types.String(10), default="")
+    visible_ids = schema.Column(types.Integer(), default=0)
 
-    def __init__(self, login=None, name=None, password=None):
-        self.name = name
-        self.login = login
-        self.password = password
-        self.salt = self.generate_salt()
-        self.date_created = datetime.datetime.now()
+    _properties = [ ("zope_id", "id" ),
+                    ("email", "email" ),
+                    ("portal_skin", "portal_skin" ),
+                    ("listed", "listed" ),
+                    ("login_time", "login_time" ),
+                    ("last_login_time", "last_login_time" ),
+                    ("fullname", "fullname" ),
+                    ("error_log_update", "error_log_update" ),
+                    ("home_page", "home_page" ),
+                    ("location", "location" ),
+                    ("description", "description" ),
+                    ("language", "language" ),
+                    ("ext_editor", "ext_editor" ),
+                    ("wysiwyg_editor", "wysiwyg_editor" ),
+                    ("visible_ids", "visible_ids" ),
+                    ]
 
-    def generate_salt(self):
-        return ''.join(random.sample(string.letters, 12))
-
-    def encrypt(self, password):
-        return sha.sha(password+self.salt).hexdigest()
+    # Make password read-only
+    @synonym_for("_password")
+    @property
+    def password:
+        return self._password
 
     def set_password(self, password):
-        self.salt = self.generate_salt()
-        self.password = self.encrypt(password)
+        self.password = password
 
-    def check_password(self, password):
-        return self.encrypt(password) == self.password
+    def authenticate(self, password):
+        return password == self.password
 
     def __repr__(self):
-        return "<User id=%d login=%s name=%s>" % (
-            self.id, self.login, self.name)
+        return "<User id=%d login=%s userid=%s>" % (
+            self.id, self.login, self.userid)
+
 
 class Group(Principal):
-    __tablename__ = "groups"
+    __tablename__ = "group"
+    __mapper_args__ = dict(polymorphic_identity="group")
 
-    id = Column(
-        Integer,
-        ForeignKey(Principal.id),
-        Sequence("principals_id"),
-        primary_key=True)
+    group_id = schema.Column(types.Integer(), schema.ForeignKey(Principal.id),
+            primary_key=True)
 
-    name = Column(String, unique=True)
-    users = relation(User, secondary=user_groups, backref="groups")
+    # XXX Should this be an association proxy so it only lists zope_ids?
+    members = orm.relation(Principal, secondary=group_member_table, backref="groups")
 
-    _roles =  relation(
+    _roles =  orm.relation(
         RoleAssignment, collection_class=set, cascade="all, delete, delete-orphan")
     roles = association_proxy("_roles", "name")
 
-    def __init__(self, name=None):
-        self.name = name
-
     def __repr__(self):
-        return "<Group id=%d name=%s>" % (self.id, self.name)
+        return "<Group id=%d groupid=%s>" % (self.id, self.groupid)
 
-# vim: set ft=python ts=4 sw=4 expandtab :
