@@ -178,8 +178,9 @@ class Plugin(BasePlugin, Cacheable):
         if login:
             keywords["login"] = login
 
+        propmap = dict(self.user_class._properties)
         for (term,value) in kw.items():
-            if term not in self.user_class._properties:
+            if term not in propmap:
                 return ()
             keywords[term] = value
 
@@ -196,16 +197,17 @@ class Plugin(BasePlugin, Cacheable):
 
         query = session.query(self.user_class)
         for (term,value) in keywords.items():
+            column = propmap[term]
             if exact_match:
-                query=query.filter_by(term=value)
+                query=query.filter_by(column=value)
             else:
-                column=getattr(self.user_class, term)
+                column=getattr(self.user_class, column)
                 if isinstance(value, str):
                     query=query.filter(column.ilike("%%%s%%", value))
                 elif isinstance(value, unicode):
                     query=query.filter(column.ilike(u"%%%s%%", value))
                 else:
-                    query=query.filter_by(term=value)
+                    query=query.filter(column==value)
 
         all = {}
         for user in query:
