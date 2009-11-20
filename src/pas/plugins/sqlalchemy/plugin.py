@@ -1,4 +1,3 @@
-import copy
 import datetime
 import logging
 import sqlalchemy.exc
@@ -173,77 +172,59 @@ class Plugin(BasePlugin, Cacheable):
         if not (id or login):
             return ()
 
-        # check cached data
-        keywords = copy.deepcopy(kw)
-        info = {
-            'id': id,
-            'login': login,
-            'exact_match': exact_match,
-            'sort_by': sort_by,
-            'max_results': max_results,
+        keywords = {}
+        if id:
+            keywords["zope_id"] = login
+        if login:
+            keywords["login"] = login
+
+        for (term,value) in kw.items():
+            if term not in self.user_class._properties:
+                return ()
+            keywords[term] = value
+
+        cachekey = {
+            '_exact_match': exact_match,
+            '_sort_by': sort_by,
+            '_max_results': max_results,
         }
-        keywords.update(info)
+        cachekey.update(keywords)
         cached_info = self.ZCacheable_get(
-            view_name=view_name, keywords=keywords)
+            view_name=view_name, keywords=cachekey)
         if cached_info is not None:
             return cached_info
 
         query = session.query(self.user_class)
-        if id is not None:
-            id = safedecode(id)
+        for (term,value) in keywords.items():
             if exact_match:
-                query=query.filter_by(zope_id=id)
+                query=query.filter_by(term=value)
             else:
-                query=query.filter_by(zope_id.ilike("%%%s%%", id))
-        if login is not None:
-            login = safedecode(login)
-            if exact_match:
-                query=query.filter_by(login=login)
-            else:
-                query=query.filter_by(login.ilike("%%%s%%", login))
+                column=getattr(self.user_class, term)
+                if isinstance(value, str):
+                    query=query.filter(column.ilike("%%%s%%", value))
+                elif isinstance(value, unicode):
+                    query=query.filter(column.ilike(u"%%%s%%", value))
+                else:
+                    query=query.filter_by(term=value)
 
-        
         all = {}
-        pas = self.aq_parent
         for user in query:
             if max_results is not None and len(all) == max_results:
                 break
 
             user_id = user.zope_id
             data = {
-                'id': safeencode(zope_id),
+                'id': safeencode(user_id),
                 'login': safeencode(user.login),
                 'pluginid': self.getId(),
             }
-
-
-            if kw:
-                # this is crude filtering, but better than none
-                try:
-                    user = pas.getUserById(user_id)
-                    keep = True
-                    for k, v in kw.items():
-                        p = user.getProperty(k, None)
-                        if not isinstance(v, basestring):
-                            if p != v:
-                                keep = False
-                                break
-                        else:
-                            if p.lower().find(v.lower()) == -1:
-                                keep = False
-                                break
-                    if not keep:
-                        continue
-                except:
-                    # any problems getting a user? forget this check
-                    pass
 
             all[user_id] = data.setdefault(user_id, data)
 
         values = tuple(all.values())
 
         # Cache data upon success
-        self.ZCacheable_set(values, view_name=view_name, keywords=keywords)
+        self.ZCacheable_set(values, view_name=view_name, keywords=cachekey)
 
         return values
 
@@ -362,7 +343,6 @@ class Plugin(BasePlugin, Cacheable):
         if cached_info is not None:
             return cached_info
 
-        session = Session()
         principal = self.getPrincipal(principal_id)
         if principal is None:
             return ()
@@ -390,7 +370,6 @@ class Plugin(BasePlugin, Cacheable):
             # XXX: Should we cache a negative result?
             return {}
 
-        # XXX We need a way to ask the principal class for the properties it supports
         for (attr_name, prop_name) in principal._properties:
             data[prop_name] = getattr(principal, attr_name)
 
@@ -432,7 +411,7 @@ class Plugin(BasePlugin, Cacheable):
             self.doSetProperty(principal, name, value)
 
         view_name = createViewName('getPropertiesForUser', user) 
-        cached_info = self.ZCacheable_invalidate(view_name=view_name)
+        self.ZCacheable_invalidate(view_name=view_name)
 
     #
     # IGroupsPlugin implementation
@@ -605,8 +584,8 @@ class Plugin(BasePlugin, Cacheable):
         certain group."""
 
         session = Session()
-        groups = session.query(self.group_class).filter_by(zope_id=group_id).count()
-        if not groups:
+        group = session.query(self.group_class).filter_by(zope_id=group_id).first()
+        if group is None:
             return False
 
         if user_id in [member.zope_id for member in group.members]:
