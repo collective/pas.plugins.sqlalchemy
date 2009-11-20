@@ -31,7 +31,7 @@ BaseObject = declarative_base()
 
 
 group_member_table = Table('group_member', BaseObject.metadata,
-    schema.Column('group_id', types.Integer(), schema.ForeignKey('group.id'))
+    schema.Column('group_id', types.Integer(), schema.ForeignKey('group.id')),
     schema.Column('principal_id', types.Integer(), schema.ForeignKey('principal.id')),
 )
 
@@ -115,7 +115,7 @@ class User(Principal):
     # Make password read-only
     @synonym_for("_password")
     @property
-    def password:
+    def password(self):
         return self._password
 
     def set_password(self, password):
