@@ -23,8 +23,7 @@ def install_pas_plugin(self):
             'IUserAdderPlugin',
             'IRolesPlugin',
             'IRoleAssignerPlugin',
-            'IPropertiesPlugin',
-            'IUpdatePlugin'])
+            'IPropertiesPlugin'])
 
 def uninstall_pas_plugin(self):
     pas = self.acl_users

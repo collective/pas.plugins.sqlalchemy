@@ -33,7 +33,7 @@ CACHE_MANAGER_ID = 'cm_test'
 class SQLLayer:
     @classmethod
     def setUp( cls ):
-        from pas.plugins.sqlalchemy.model import Base
+        from pas.plugins.sqlalchemy.model import BaseObject
 
         testing.setUp()
         zcml.load_config('meta.zcml', Products.Five)
@@ -52,8 +52,8 @@ class SQLLayer:
         # Setup the DB connection and PAS instances
         factory = EngineFactory('sqlite:///:memory:')
         engine = factory()
-        Base.metadata.bind = engine
-        Base.metadata.create_all(engine)
+        BaseObject.metadata.bind = engine
+        BaseObject.metadata.create_all(engine)
         cls.pas = cls.setupPAS(sandbox)
 
         utility = GloballyScopedSession(
@@ -68,9 +68,9 @@ class SQLLayer:
 
     @classmethod
     def tearDown(cls):
-        from pas.plugins.sqlalchemy.model import Base
+        from pas.plugins.sqlalchemy.model import BaseObject
         session = Session()
-        Base.metadata.drop_all()
+        BaseObject.metadata.drop_all()
         testing.tearDown()
         app = ZopeTestCase.app()
         app.manage_delObjects(SANDBOX_ID)

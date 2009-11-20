@@ -1,8 +1,8 @@
 import datetime
 import logging
 import sqlalchemy.exc
-from sqlachemy import sql
-from sqlachemy import types
+from sqlalchemy import sql
+from sqlalchemy import types
 import traceback
 
 from AccessControl import ClassSecurityInfo
@@ -133,7 +133,7 @@ class Plugin(BasePlugin, Cacheable):
     @graceful_recovery(False)
     def allowPasswordSet(self, userid):
         session = Session()
-        user = session.query(self.user_class).filter_by(zope_id=id).first()
+        user = session.query(self.user_class).filter_by(zope_id=userid).first()
         if user is not None:
             return True
         return False
@@ -154,7 +154,7 @@ class Plugin(BasePlugin, Cacheable):
         session = Session()
         user = session.query(model.User).filter_by(login=login).first()
 
-        if user is not None and user.check_password(password):
+        if user is not None and user.authenticate(password):
             return (user.zope_id, user.login)
 
     #
@@ -197,9 +197,9 @@ class Plugin(BasePlugin, Cacheable):
 
         query = session.query(self.user_class)
         for (term,value) in keywords.items():
-            column = propmap[term]
+            column=getattr(self.user_class, propmap[term])
             if exact_match:
-                query=query.filter_by(column=value)
+                query=query.filter(column==value)
             else:
                 column=getattr(self.user_class, column)
                 if isinstance(value, str):

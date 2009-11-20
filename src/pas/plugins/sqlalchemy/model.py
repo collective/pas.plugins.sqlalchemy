@@ -39,7 +39,7 @@ group_member_table = Table('group_member', BaseObject.metadata,
 class Principal(BaseObject):
     __tablename__ = "principal"
 
-    id = schema.Column(types.Integer(), types.Sequence("principals_id"), primary_key=True)
+    id = schema.Column(types.Integer(), schema.Sequence("principals_id"), primary_key=True)
     type = schema.Column(types.String(5), nullable=False, default="user")
     zope_id = schema.Column(types.String(16), nullable=False, unique=True)
 
@@ -51,7 +51,7 @@ class Principal(BaseObject):
 class RoleAssignment(BaseObject):
     __tablename__ = "role_assignment"
 
-    id = schema.Column(types.Integer(), types.Sequence("role_assignment_id"), primary_key=True)
+    id = schema.Column(types.Integer(), schema.Sequence("role_assignment_id"), primary_key=True)
     principal_id = schema.Column(types.Integer(), schema.ForeignKey(Principal.id))
     name = schema.Column(types.String(64))
 
@@ -71,7 +71,7 @@ class User(Principal):
             primary_key=True)
 
     login = schema.Column(types.String(64), unique=True)
-    password = schema.Column("_password", types.String(64))
+    _password = schema.Column("password", types.String(64))
     enabled = schema.Column(types.Boolean())
 
     # roles
@@ -119,21 +119,21 @@ class User(Principal):
         return self._password
 
     def set_password(self, password):
-        self.password = password
+        self._password = password
 
     def authenticate(self, password):
-        return password == self.password
+        return password == self._password
 
     def __repr__(self):
-        return "<User id=%d login=%s userid=%s>" % (
-            self.id, self.login, self.userid)
+        return "<User id=%d login=%r userid=%r>" % (
+            self.id, self.login, self.zope_id)
 
 
 class Group(Principal):
     __tablename__ = "group"
     __mapper_args__ = dict(polymorphic_identity="group")
 
-    group_id = schema.Column(types.Integer(), schema.ForeignKey(Principal.id),
+    group_id = schema.Column("id", types.Integer(), schema.ForeignKey(Principal.id),
             primary_key=True)
 
     # XXX Should this be an association proxy so it only lists zope_ids?
