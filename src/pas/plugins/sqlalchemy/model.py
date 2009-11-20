@@ -95,7 +95,8 @@ class User(Principal):
     wysiwyg_editor = schema.Column(types.String(10), default="")
     visible_ids = schema.Column(types.Integer(), default=0)
 
-    _properties = [ ("zope_id", "id" ),
+    _properties = [ ("id", "zope_id" ),
+                    ("login", "login" ),
                     ("email", "email" ),
                     ("portal_skin", "portal_skin" ),
                     ("listed", "listed" ),

@@ -166,17 +166,18 @@ class Plugin(BasePlugin, Cacheable):
                        sort_by=None, max_results=None, **kw):
         """See IUserEnumerationPlugin."""
 
+        if exact_match and not (login or id):
+            return ()
+
         session = Session()
         view_name = createViewName('enumerateUsers', id or login)
 
-        if not (id or login):
-            return ()
-
         keywords = {}
+        query = session.query(self.user_class)
         if id:
-            keywords["zope_id"] = login
+            kw["id"] = id
         if login:
-            keywords["login"] = login
+            kw["login"] = login
 
         propmap = dict(self.user_class._properties)
         for (term,value) in kw.items():
@@ -195,19 +196,23 @@ class Plugin(BasePlugin, Cacheable):
         if cached_info is not None:
             return cached_info
 
-        query = session.query(self.user_class)
+        def clause(column, value):
+            if exact_match or not isinstance(value, basestring):
+                return (column==value)
+            elif isinstance(value, str):
+                return column.ilike("%%%s%%" % value)
+            elif isinstance(value, unicode):
+                return column.ilike(u"%%%s%%" % value)
+            return (column==v)
+
+
         for (term,value) in keywords.items():
             column=getattr(self.user_class, propmap[term])
-            if exact_match:
-                query=query.filter(column==value)
+            if not isinstance(value, list):
+                query = query.filter(clause(column, value))
             else:
-                column=getattr(self.user_class, column)
-                if isinstance(value, str):
-                    query=query.filter(column.ilike("%%%s%%", value))
-                elif isinstance(value, unicode):
-                    query=query.filter(column.ilike(u"%%%s%%", value))
-                else:
-                    query=query.filter(column==value)
+                parts = [clause(column, v) for v in value]
+                query = query.filter(sql.or_(*parts))
 
         all = {}
         for user in query:
@@ -253,7 +258,7 @@ class Plugin(BasePlugin, Cacheable):
     @graceful_recovery()
     def removeUser(self, user_id): # raises keyerror
         session = Session()
-        user = session.query(model.User).filter_by(name=user_id).first()
+        user = session.query(model.User).filter_by(zope_id=user_id).first()
         if user is None:
             raise KeyError(user_id)
 
@@ -372,8 +377,8 @@ class Plugin(BasePlugin, Cacheable):
             # XXX: Should we cache a negative result?
             return {}
 
-        for (attr_name, prop_name) in principal._properties:
-            data[prop_name] = getattr(principal, attr_name)
+        for (zope_attr, sql_attr) in principal._properties:
+            data[zope_attr] = getattr(principal, sql_attr)
 
         if data:
             self.ZCacheable_set(data, view_name=view_name)
@@ -386,7 +391,8 @@ class Plugin(BasePlugin, Cacheable):
     #
 
     def doSetProperty(self, principal, name, value):
-        if name not in principal._properties:
+        sql_attr = dict(principal._properties).get(name, None)
+        if sql_attr is None:
             raise ValueError("Trying to set non-existing property")
 
         if isinstance(value, DateTime):
@@ -402,7 +408,7 @@ class Plugin(BasePlugin, Cacheable):
             cspec = getattr(principal.__table__.columns, name).type
             if isinstance(cspec, types.String):
                 value = value[:cspec.length]
-        setattr(principal, name, value)
+        setattr(principal, sql_attr, value)
 
     @graceful_recovery()
     def setPropertiesForUser(self, user, propertysheet):
@@ -440,7 +446,7 @@ class Plugin(BasePlugin, Cacheable):
         if principal is None:
             return ()
 
-        return [group.name for group in principal.groups]
+        return [group.zope_id for group in principal.groups]
 
     #
     # IGroupsEnumeration implementation

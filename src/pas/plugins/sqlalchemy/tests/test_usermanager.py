@@ -103,22 +103,6 @@ class TestEnumerateUsers(basetestcase.BaseTestCase):
         ret = self.plugin.enumerateUsers(id=['user_1', 'foo'])
         self.assertEqual(len(ret), 2) # user_1, foo_user_11
 
-    def testIdStringAndLoginStringNoExact(self):
-        ret = self.plugin.enumerateUsers(id='user_1', login='bar')
-        self.assertEqual(len(ret), 3) # user_1, foo_user_11, bar
-
-    def testIdStringAndLoginStringExact(self):
-        ret = self.plugin.enumerateUsers(id='user', login='bar', exact_match=True)
-        self.assertEqual(len(ret), 1) # bar
-
-    def testIdListAndLoginStringNoExact(self):
-        ret = self.plugin.enumerateUsers(id=['2', '3'], login='4')
-        self.assertEqual(len(ret), 1) # user_2
-
-    def testIdStringAndLoginListNoExact(self):
-        ret = self.plugin.enumerateUsers(id='5', login=['0', '2', '8'])
-        self.assertEqual(len(ret), 1) # user_2
-
     def testMaxResultsZero(self):
         ret = self.plugin.enumerateUsers(max_results=0)
         self.assertEqual(len(ret), 0)
