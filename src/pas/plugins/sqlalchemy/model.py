@@ -20,6 +20,7 @@
 #  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.sql import functions
 from sqlalchemy import orm
 from sqlalchemy import schema
 from sqlalchemy import types
@@ -44,7 +45,7 @@ class Principal(BaseObject):
     zope_id = schema.Column(types.String(16), nullable=False, unique=True)
 
     __mapper_args__ = dict(polymorphic_on=type)
-    _properties = [ ("zope_id", "id" )]
+    _properties = [ ("id", "zope_id" )]
     
 
 
@@ -83,10 +84,10 @@ class User(Principal):
     email = schema.Column(types.String(40), default=u"")
     portal_skin = schema.Column(types.String(20), default=u"")
     listed = schema.Column(types.Integer(), default=1)
-    login_time = schema.Column(types.DateTime())
-    last_login_time = schema.Column(types.DateTime())
+    login_time = schema.Column(types.DateTime(), default=functions.now())
+    last_login_time = schema.Column(types.DateTime(), default=functions.now())
     fullname = schema.Column(types.String(40), default=u"")
-    error_log_update = schema.Column(types.Float())
+    error_log_update = schema.Column(types.Float(), default=0)
     home_page = schema.Column(types.String(40), default=u"")
     location = schema.Column(types.String(40), default=u"")
     description = schema.Column(types.Text(), default=u"")

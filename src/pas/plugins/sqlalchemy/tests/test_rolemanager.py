@@ -2,6 +2,7 @@
 # tests from sqlpasplugin ( GPL v2 )
 
 from pas.plugins.sqlalchemy.tests import basetestcase
+from pas.plugins.sqlalchemy.tests.test_propertyprovider import TrivialUser
 from pas.plugins.sqlalchemy.setuphandlers import plugin_name
 
 from Products.PluggableAuthService.utils import createViewName
@@ -86,7 +87,8 @@ class TestRoleCaching(basetestcase.CacheTestCase):
         self.failUnless(user is _marker)
 
     def testSingleQuery(self):
-        self.plugin.getRolesForPrincipal(self.username)
+        user=TrivialUser(self.username)
+        self.plugin.getRolesForPrincipal(user)
         view_name = createViewName('getRolesForPrincipal', self.username)
         user = self.plugin.ZCacheable_get(
                 view_name=view_name,
@@ -94,9 +96,11 @@ class TestRoleCaching(basetestcase.CacheTestCase):
         self.failUnless(user is not _marker)
 
     def testTwoQueres(self):
-        self.plugin.getRolesForPrincipal(self.username)
+        user=TrivialUser(self.username)
+        self.plugin.getRolesForPrincipal(user)
         self.plugin.doAddUser("User1", self.password)
-        self.plugin.getRolesForPrincipal('User1')
+        user1=TrivialUser("User1")
+        self.plugin.getRolesForPrincipal(user1)
 
         view_name = createViewName('getRolesForPrincipal', self.username)
         user = self.plugin.ZCacheable_get(
@@ -111,7 +115,8 @@ class TestRoleCaching(basetestcase.CacheTestCase):
         self.failUnless(user is not _marker)
 
     def testAssignRoleZapsCache(self):
-        self.plugin.getRolesForPrincipal(self.username)
+        user=TrivialUser(self.username)
+        self.plugin.getRolesForPrincipal(user)
         self.plugin.doAssignRoleToPrincipal(self.username, 'henchman')
         view_name = createViewName('getRolesForPrincipal', self.username)
         user = self.plugin.ZCacheable_get(
@@ -120,7 +125,8 @@ class TestRoleCaching(basetestcase.CacheTestCase):
         self.failUnless(user is _marker)
 
     def testAssignRoleKeepsCacheIfToldSo(self):
-        self.plugin.getRolesForPrincipal(self.username)
+        user=TrivialUser(self.username)
+        self.plugin.getRolesForPrincipal(user)
         self.plugin.doAssignRoleToPrincipal(self.username, 'henchman', True)
         view_name = createViewName('getRolesForPrincipal', self.username)
         user = self.plugin.ZCacheable_get(
@@ -129,7 +135,8 @@ class TestRoleCaching(basetestcase.CacheTestCase):
         self.failUnless(user is not _marker)
 
     def testAssignRolesZapsCache(self):
-        self.plugin.getRolesForPrincipal(self.username)
+        user=TrivialUser(self.username)
+        self.plugin.getRolesForPrincipal(user)
         self.plugin.assignRolesToPrincipal(('henchman',), self.username)
         view_name = createViewName('getRolesForPrincipal', self.username)
         user = self.plugin.ZCacheable_get(

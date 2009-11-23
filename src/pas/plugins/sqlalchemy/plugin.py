@@ -5,6 +5,7 @@ from sqlalchemy import sql
 from sqlalchemy import types
 import traceback
 
+from zope.dottedname.resolve import resolve
 from AccessControl import ClassSecurityInfo
 from AccessControl.SecurityManagement import getSecurityManager
 from Globals import InitializeClass
@@ -88,9 +89,22 @@ class Plugin(BasePlugin, Cacheable):
     meta_type = 'SQLAlchemy user/group/prop manager'
     security = ClassSecurityInfo()
 
+    _properties = BasePlugin._properties + (
+            { 'id'    : 'user_model',
+              'label' : 'SQLAlchemy User model (dotted path)',
+              'type'  : 'string',
+              'mode'  : 'w',
+            },
+            { 'id'    : 'group_model',
+              'label' : 'SQLAlchemy Group model (dotted path)',
+              'type'  : 'string',
+              'mode'  : 'w',
+            })
+
+    user_model = "pas.plugins.sqlalchemy.model.User"
+    group_model = "pas.plugins.sqlalchemy.model.Group"
+
     principal_class = model.Principal
-    user_class = model.User
-    group_class = model.Group
 
     def __init__(self, id, title=None):
         self.id = self.id = id
@@ -99,6 +113,30 @@ class Plugin(BasePlugin, Cacheable):
     security.declarePrivate('invalidateCacheForChangedUser')
     def invalidateCacheForChangedUser(self, user_id):
         pass
+
+    @property
+    def user_class(self):
+        cls=getattr(self, "_v_user_class", None)
+        if cls is None:
+            try:
+                cls=self._v_user_class=resolve(self.user_model)
+            except ImportError, e:
+                logger.error("Unable to import user model: %s", e)
+                cls=model.User
+            cls=self._v_user_class=model.User
+        return cls
+
+    @property
+    def group_class(self):
+        cls=getattr(self, "_v_group_class", None)
+        if cls is None:
+            try:
+                cls=self._v_group_class=resolve(self.group_model)
+            except ImportError, e:
+                logger.error("Unable to import group model: %s", e)
+                cls=model.Group
+            cls=self._v_group_class=model.Group
+        return cls
 
     #
     # IUserManagement implementation
@@ -152,45 +190,31 @@ class Plugin(BasePlugin, Cacheable):
             return None
 
         session = Session()
-        user = session.query(model.User).filter_by(login=login).first()
+        user = session.query(self.user_class).filter_by(login=login).first()
 
         if user is not None and user.authenticate(password):
             return (user.zope_id, user.login)
 
-    #
-    # IUserEnumerationPlugin implementation
-    #
-    security.declarePrivate('enumerateUsers')
-    @graceful_recovery(())
-    def enumerateUsers(self, id=None, login=None, exact_match=False,
-                       sort_by=None, max_results=None, **kw):
-        """See IUserEnumerationPlugin."""
 
-        if exact_match and not (login or id):
+    def _enumerate(self, cls, exact_match, sort_by, max_results, criteria):
+        """Helper method for enumerateUsers and enumerateGroups.
+        """
+        if exact_match and not ("login" in criteria or "id" in criteria):
             return ()
 
         session = Session()
-        view_name = createViewName('enumerateUsers', id or login)
-
-        keywords = {}
-        query = session.query(self.user_class)
-        if id:
-            kw["id"] = id
-        if login:
-            kw["login"] = login
-
-        propmap = dict(self.user_class._properties)
-        for (term,value) in kw.items():
-            if term not in propmap:
-                return ()
-            keywords[term] = value
+        view_name = createViewName('enumerate%s' % cls.__name__,
+                                    criteria.get("id", None) or criteria.get("login", None))
+        session = Session()
+        query = session.query(cls)
 
         cachekey = {
             '_exact_match': exact_match,
             '_sort_by': sort_by,
             '_max_results': max_results,
         }
-        cachekey.update(keywords)
+        cachekey.update(criteria)
+
         cached_info = self.ZCacheable_get(
             view_name=view_name, keywords=cachekey)
         if cached_info is not None:
@@ -205,35 +229,54 @@ class Plugin(BasePlugin, Cacheable):
                 return column.ilike(u"%%%s%%" % value)
             return (column==v)
 
-
-        for (term,value) in keywords.items():
-            column=getattr(self.user_class, propmap[term])
+        propmap = dict(cls._properties)
+        for (term,value) in criteria.items():
+            column=getattr(cls, propmap[term])
             if not isinstance(value, list):
                 query = query.filter(clause(column, value))
             else:
                 parts = [clause(column, v) for v in value]
                 query = query.filter(sql.or_(*parts))
 
+        if sort_by is not None and sort_by in propmap:
+            query = query.order_by(getattr(cls[sort_by]))
+        if max_results is not None:
+            query = query.limit(max_results)
+
         all = {}
         for user in query:
-            if max_results is not None and len(all) == max_results:
-                break
-
             user_id = user.zope_id
-            data = {
-                'id': safeencode(user_id),
-                'login': safeencode(user.login),
-                'pluginid': self.getId(),
-            }
-
+            data = dict(id= safeencode(user_id),
+                        pluginid=self.getId())
+            if "login" in propmap:
+                data["login"] = user.login
             all[user_id] = data.setdefault(user_id, data)
 
         values = tuple(all.values())
-
         # Cache data upon success
         self.ZCacheable_set(values, view_name=view_name, keywords=cachekey)
 
         return values
+
+    #
+    # IUserEnumerationPlugin implementation
+    #
+    security.declarePrivate('enumerateUsers')
+    @graceful_recovery(())
+    def enumerateUsers(self, id=None, login=None, exact_match=False,
+                       sort_by=None, max_results=None, **kw):
+        """See IUserEnumerationPlugin."""
+
+        if exact_match and not (login or id):
+            return ()
+
+        if id:
+            kw["id"] = id
+        if login:
+            kw["login"] = login
+
+        return self._enumerate(self.user_class, exact_match, sort_by, max_results, kw)
+
 
     #
     # IUserAdderPlugin implementation
@@ -258,7 +301,7 @@ class Plugin(BasePlugin, Cacheable):
     @graceful_recovery()
     def removeUser(self, user_id): # raises keyerror
         session = Session()
-        user = session.query(model.User).filter_by(zope_id=user_id).first()
+        user = session.query(self.user_class).filter_by(zope_id=user_id).first()
         if user is None:
             raise KeyError(user_id)
 
@@ -344,7 +387,12 @@ class Plugin(BasePlugin, Cacheable):
         o May assign roles based on values in the REQUEST object, if present.
         """
 
-        principal_id = principal.getId()
+        if isinstance(principal, basestring):
+            # This is an extension to the official PAS plugin for internal use.
+            principal_id = principal
+        else:
+            principal_id = principal.getId()
+
         view_name = createViewName('getRolesForPrincipal', principal_id)
         cached_info = self.ZCacheable_get(view_name)
         if cached_info is not None:
@@ -369,7 +417,6 @@ class Plugin(BasePlugin, Cacheable):
         cached_info = self.ZCacheable_get(view_name=view_name)
         if cached_info is not None:
             return MutablePropertySheet(self.id, **cached_info)
-        data = None
         session = Session()
         principal = session.query(self.principal_class)\
                 .filter_by(zope_id=user.getId()).first()
@@ -377,8 +424,13 @@ class Plugin(BasePlugin, Cacheable):
             # XXX: Should we cache a negative result?
             return {}
 
+        data = {}
         for (zope_attr, sql_attr) in principal._properties:
-            data[zope_attr] = getattr(principal, sql_attr)
+            value = getattr(principal, sql_attr)
+
+            if isinstance(value, datetime.datetime):
+                value = DateTime(value.isoformat())
+            data[zope_attr] = value
 
         if data:
             self.ZCacheable_set(data, view_name=view_name)
@@ -391,7 +443,8 @@ class Plugin(BasePlugin, Cacheable):
     #
 
     def doSetProperty(self, principal, name, value):
-        sql_attr = dict(principal._properties).get(name, None)
+        propmap = dict([reversed(r) for r in principal._properties])
+        sql_attr = propmap.get(name, None)
         if sql_attr is None:
             raise ValueError("Trying to set non-existing property")
 
@@ -493,45 +546,17 @@ class Plugin(BasePlugin, Cacheable):
 
         o Plugin *must* ignore unknown criteria.
 
-        o Plugin may raise ValueError for invalid critera.
+        o Plugin may raise ValueError for invalid criteria.
 
         o Insufficiently-specified criteria may have catastrophic
           scaling issues for some implementations.
         """
 
-# XXX Fully integrate this with enumerateUsers
-        session = Session()
+        if id:
+            kw["id"] = id
 
-        if id is None:
-            clause = None
-        elif isinstance(id, (list, tuple)) and exact_match:
-            statements = []
-            for i in id:
-                statements.append(model.Group.name == i)
-            clause = sql.or_( *statements )
-        elif isinstance( id, (list, tuple)) and not exact_match:
-            clause = sql.or_(*(map(model.Group.name.contains, id)))
-        elif not exact_match:
-            clause = sql.or_(
-                model.Group.name.contains(id),
-                model.Group.name.ilike(id))
-        else:
-            clause = model.Group.name.ilike(id)
+        return self._enumerate(self.group_class, exact_match, sort_by, max_results, kw)
 
-        query = session.query(model.Group)
-
-        if clause:
-            query = query.filter(clause)
-        if sort_by:
-            assert sort_by in ('name',)
-            column = getattr(model.Group, sort_by)
-            query = query.order_by(column)
-
-        if max_results is not None and isinstance(max_results, int):
-            query = query.limit(max_results)
-
-        return tuple(
-            dict(id=r.name, plugin=self.id) for r in query.all())
 
     ####################
     # IGroupManagement 
@@ -704,7 +729,7 @@ class Plugin(BasePlugin, Cacheable):
 
         session = Session()
         groups = session.query(self.group_class).all()
-        return [PloneGroup(g.name).__of__(self) for g in groups]
+        return [PloneGroup(g.zope_id).__of__(self) for g in groups]
 
     @graceful_recovery(())
     def getGroupIds( self ):
@@ -713,7 +738,7 @@ class Plugin(BasePlugin, Cacheable):
         """
 
         session = Session()
-        return [row[0] for row in session.query(self.group_class.zope_id.name).all()]
+        return [row[0] for row in session.query(self.group_class.zope_id).all()]
 
     @graceful_recovery(())
     def getGroupMembers(self, group_id):
@@ -725,7 +750,7 @@ class Plugin(BasePlugin, Cacheable):
         group = session.query(self.group_class).filter_by(zope_id=group_id).first()
         if group is None:
             return []
-        return [member.zope_id for member in group.membres]
+        return [member.zope_id for member in group.members]
 
 
     # PlonePAS expects plugins implementing IRoleAssignerPlugin to
