@@ -32,8 +32,8 @@ BaseObject = declarative_base()
 
 
 group_member_table = Table('group_member', BaseObject.metadata,
-    schema.Column('group_id', types.Integer(), schema.ForeignKey('group.id')),
-    schema.Column('principal_id', types.Integer(), schema.ForeignKey('principal.id')),
+    schema.Column('group_id', types.Integer(), schema.ForeignKey('group.id'), primary_key=True),
+    schema.Column('principal_id', types.Integer(), schema.ForeignKey('principal.id'), primary_key=True),
 )
 
 
