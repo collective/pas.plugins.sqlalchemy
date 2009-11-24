@@ -164,13 +164,13 @@ class Plugin(BasePlugin, Cacheable):
 
     security.declarePrivate('doChangeUser')
     @graceful_recovery()
-    def doChangeUser(self, login, password, **kw):
+    def doChangeUser(self, principal_id, password, **kw):
         # userSetPassword in PlonePAS expects a RuntimeError when a
         # plugin doesn't hold the user.
-        query = Session.query(self.user_class).filter_by(login=login)
+        query = Session.query(self.user_class).filter_by(zope_id=principal_id)
         user = query.first()
         if user is None:
-            raise RuntimeError("User does not exist: login=%s" % login)
+            raise RuntimeError("User does not exist: zope_id=%s" % principal_id)
         user.set_password(password)
 
     security.declarePrivate('doDeleteUser')
@@ -337,7 +337,7 @@ class Plugin(BasePlugin, Cacheable):
         user_id = getSecurityManager().getUser().getId()
         return self.getUserInfo(user_id)
 
-    def allowRoleAssign(self, prinicipal_id, role_id):
+    def allowRoleAssign(self, principal_id, role_id):
         return True
 
     def doRemoveRolesToPrincipal(self, roles, principal_id):
