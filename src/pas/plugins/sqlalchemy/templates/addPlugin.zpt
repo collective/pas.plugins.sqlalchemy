@@ -14,7 +14,7 @@
       <table>
         <tr>
           <td class="form-label">Id</td>
-          <td><input type="text" name="id" tal:content="request/id|string:sql/></td>
+          <td><input type="text" name="id" tal:content="request/id|string:sql"/></td>
         </tr>
         <tr>
           <td class="form-label">Title</td>
