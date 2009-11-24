@@ -144,8 +144,7 @@ class Plugin(BasePlugin, Cacheable):
                 cls=self._v_user_class=resolve(self.user_model)
             except ImportError, e:
                 logger.error("Unable to import user model: %s", e)
-                cls=model.User
-            cls=self._v_user_class=model.User
+                cls=self._v_user_class=model.User
         return cls
 
     @property
@@ -156,8 +155,7 @@ class Plugin(BasePlugin, Cacheable):
                 cls=self._v_group_class=resolve(self.group_model)
             except ImportError, e:
                 logger.error("Unable to import group model: %s", e)
-                cls=model.Group
-            cls=self._v_group_class=model.Group
+                cls=self._v_group_class=model.Group
         return cls
 
     #
