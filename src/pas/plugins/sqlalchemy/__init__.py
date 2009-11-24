@@ -1,10 +1,14 @@
-plugins = set()
 
 def initialize(context):
     from Products.PluggableAuthService.PluggableAuthService import registerMultiPlugin
-    from Products.PluggableAuthService.PluggableAuthService import MultiPlugins
+    from AccessControl.Permissions import manage_users
 
     import plugin
 
-    if plugin.Plugin.meta_type not in MultiPlugins:
-        registerMultiPlugin(plugin.Plugin.meta_type)
+    registerMultiPlugin(plugin.Plugin.meta_type)
+    context.registerClass(plugin.Plugin,
+            permission=manage_users,
+            constructors=(plugin.manage_addSqlalchemyPlugin,
+                          plugin.addSqlalchemyPlugin),
+            visibility=None)
+

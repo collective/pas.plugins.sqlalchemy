@@ -9,6 +9,7 @@ from zope.dottedname.resolve import resolve
 from AccessControl import ClassSecurityInfo
 from AccessControl.SecurityManagement import getSecurityManager
 from Globals import InitializeClass
+from Products.PageTemplates.PageTemplateFile import PageTemplateFile
 from Products.PluggableAuthService.utils import classImplements
 from Products.PluggableAuthService.plugins.BasePlugin import BasePlugin
 from Products.PluggableAuthService.permissions import ManageUsers
@@ -43,6 +44,22 @@ from z3c.saconfig import named_scoped_session
 Session = named_scoped_session("pas.plugins.sqlalchemy")
 
 logger = logging.getLogger("pas.plugins.sqlalchemy")
+
+manage_addSqlalchemyPlugin = PageTemplateFile("templates/addPlugin",
+        globals(), __name__="manage_addPlugin")
+
+def addSqlalchemyPlugin(self, id, title="", user_model=None, group_model=None, REQUEST=None):
+    """Add an SQLAlchemy plugin to a PAS."""
+    p=Plugin(id, title)
+    p.user_model=user_model
+    p.group_model=group_model
+    self._setObject(p.getId(), p)
+
+    if REQUEST is not None:
+        REQUEST.response.redirect("%s/manage_workspace"
+                "?manage_tabs_message=SQLAlchemy+plugin+added." %
+                self.absolute_url())
+
 
 def safeencode(v):
     if isinstance(v, unicode):
@@ -106,9 +123,14 @@ class Plugin(BasePlugin, Cacheable):
 
     principal_class = model.Principal
 
-    def __init__(self, id, title=None):
+    def __init__(self, id, title=None, user_model=None, group_model=None):
         self.id = self.id = id
         self.title = title
+	if user_model:
+	       self.user_model=user_model
+	if group_model:
+	       self.group_model=group_model
+
 
     security.declarePrivate('invalidateCacheForChangedUser')
     def invalidateCacheForChangedUser(self, user_id):
