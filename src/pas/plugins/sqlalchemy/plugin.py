@@ -466,7 +466,7 @@ class Plugin(BasePlugin, Cacheable):
         propmap = dict([reversed(r) for r in principal._properties])
         sql_attr = propmap.get(name, None)
         if sql_attr is None:
-            raise ValueError("Trying to set non-existing property")
+            return
 
         if isinstance(value, DateTime):
             value = datetime.datetime(
@@ -478,7 +478,7 @@ class Plugin(BasePlugin, Cacheable):
         # application)
         if isinstance(value, basestring):
             value = safedecode(value)
-            cspec = getattr(principal.__table__.columns, name).type
+            cspec = getattr(principal.__table__.columns, sql_attr).type
             if isinstance(cspec, types.String):
                 value = value[:cspec.length]
         setattr(principal, sql_attr, value)
