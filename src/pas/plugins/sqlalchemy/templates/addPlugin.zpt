@@ -10,7 +10,7 @@
       The SQLAlchemy plugin allows using users and groups in a SQL database.
     </p>
 
-    <form action="addADPasswordChangePlugin" method="post">
+    <form action="addSqlalchemyPlugin" method="post">
       <table>
         <tr>
           <td class="form-label">Id</td>
