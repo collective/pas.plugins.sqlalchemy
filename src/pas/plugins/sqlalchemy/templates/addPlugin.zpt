@@ -21,10 +21,6 @@
           <td><input type="text" name="title"/></td>
         </tr>
         <tr>
-          <td class="form-label">DSN</td>
-          <td><input type="text" name="dsn"/></td>
-        </tr>
-        <tr>
           <td class="form-label">User model</td>
           <td><input type="text" name="user_model" tal:attributes="value request/user_model|string:pas.plugins.sqlalchemy.model.User"/></td>
         </tr>
