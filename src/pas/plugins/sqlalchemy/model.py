@@ -138,7 +138,6 @@ class Group(Principal):
     group_id = schema.Column("id", types.Integer(), schema.ForeignKey(Principal.id),
             primary_key=True)
 
-    # XXX Should this be an association proxy so it only lists zope_ids?
     members = orm.relation(Principal, secondary=group_member_table, backref="groups")
 
     _roles =  orm.relation(
