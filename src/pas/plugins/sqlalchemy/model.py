@@ -73,7 +73,7 @@ class User(Principal):
 
     login = schema.Column(types.String(64), unique=True)
     _password = schema.Column("password", types.String(64))
-    enabled = schema.Column(types.Boolean())
+    enabled = schema.Column(types.Boolean(), nullable=False, default=True, index=True)
 
     # roles
     _roles =  orm.relation(
