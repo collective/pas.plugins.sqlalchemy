@@ -14,7 +14,7 @@
       <table>
         <tr>
           <td class="form-label">Id</td>
-          <td><input type="text" name="id" tal:content="request/id|string:sql"/></td>
+          <td><input type="text" name="id" tal:attributes="value request/id|string:sql"/></td>
         </tr>
         <tr>
           <td class="form-label">Title</td>
@@ -26,11 +26,11 @@
         </tr>
         <tr>
           <td class="form-label">User model</td>
-          <td><input type="text" name="user_model" tal:content="request/user_model|string:pas.plugins.sqlalchemy.model.User"/></td>
+          <td><input type="text" name="user_model" tal:attributes="value request/user_model|string:pas.plugins.sqlalchemy.model.User"/></td>
         </tr>
         <tr>
           <td class="form-label">Group model</td>
-          <td><input type="text" name="group_model" tal:content="request/user_model|string:pas.plugins.sqlalchemy.model.Group"/></td>
+          <td><input type="text" name="group_model" tal:attributes="value request/user_model|string:pas.plugins.sqlalchemy.model.Group"/></td>
         </tr>
         <tr>
           <td colspan="2">
