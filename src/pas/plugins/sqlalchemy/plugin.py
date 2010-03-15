@@ -39,6 +39,8 @@ from Products.PlonePAS.interfaces.group import IGroupManagement
 from Products.PlonePAS.sheet import MutablePropertySheet
 from Products.PlonePAS.plugins.group import PloneGroup
 
+from Products.CMFCore.utils import getToolByName
+
 from pas.plugins.sqlalchemy import model
 from z3c.saconfig import named_scoped_session
 Session = named_scoped_session("pas.plugins.sqlalchemy")
@@ -426,17 +428,32 @@ class Plugin(BasePlugin, Cacheable):
         self.ZCacheable_set(roles, view_name)
         return roles
 
+    def _getSchema(self, isgroup=None):
+        # this could probably stand to be cached
+        datatool = isgroup and "portal_groupdata" or "portal_memberdata"
+        schema = getattr(self, '_schema', None)
+        if not schema:
+            # if no schema is provided, use portal_memberdata properties
+            schema = ()
+            mdtool = getToolByName(self, datatool, None)
+            # Don't fail badly if tool is not available.
+            if mdtool is not None:
+                mdschema = mdtool.propertyMap()
+                schema = [(elt['id'], elt['type']) for elt in mdschema]
+        return schema
 
     @graceful_recovery()
     def getPropertiesForUser(self, user, request=None):
         """Get property values for a user or group.
         Returns a dictionary of values or a PropertySheet.
         """
+        isGroup = getattr(user, 'isGroup', lambda: None)()
 
         view_name = createViewName('getPropertiesForUser', user.getId())
         cached_info = self.ZCacheable_get(view_name=view_name)
         if cached_info is not None:
-            return MutablePropertySheet(self.id, **cached_info)
+            return MutablePropertySheet(self.id,
+                         schema=self._getSchema(isGroup), **cached_info)
         session = Session()
         principal = session.query(self.principal_class)\
                 .filter_by(zope_id=user.getId()).first()
@@ -455,7 +472,8 @@ class Plugin(BasePlugin, Cacheable):
         if data:
             self.ZCacheable_set(data, view_name=view_name)
             data.pop('id', None)
-            sheet = MutablePropertySheet(self.id, **data)
+            sheet = MutablePropertySheet(self.id,
+                        schema=self._getSchema(isGroup), **data)
             return sheet
 
     #
