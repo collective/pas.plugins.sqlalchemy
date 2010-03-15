@@ -19,6 +19,8 @@
 #  along with this program; if not, write to the Free Software
 #  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
+from AccessControl import AuthEncoding
+
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.sql import functions
 from sqlalchemy import orm
@@ -120,11 +122,20 @@ class User(Principal):
     def password(self):
         return self._password
 
+    def pw_encrypt( self, password ):
+        if AuthEncoding.is_encrypted( password ):
+            return password
+        return AuthEncoding.pw_encrypt( password )
+
     def set_password(self, password):
-        self._password = password
+        self._password = self.pw_encrypt(password)
 
     def authenticate(self, password):
-        return password == self._password
+        reference = self._password
+        if AuthEncoding.is_encrypted( reference ):
+            if AuthEncoding.pw_validate( reference, password ):
+                return True
+        #return password == self._password
 
     def __repr__(self):
         return "<User id=%d login=%r userid=%r>" % (
