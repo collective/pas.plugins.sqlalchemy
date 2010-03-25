@@ -50,10 +50,11 @@ logger = logging.getLogger("pas.plugins.sqlalchemy")
 manage_addSqlalchemyPlugin = PageTemplateFile("templates/addPlugin",
         globals(), __name__="manage_addPlugin")
 
-def addSqlalchemyPlugin(self, id, title="", user_model=None, group_model=None, REQUEST=None):
+def addSqlalchemyPlugin(self, id, title="", user_model=None, principal_model=None, group_model=None, REQUEST=None):
     """Add an SQLAlchemy plugin to a PAS."""
     p=Plugin(id, title)
     p.user_model=user_model
+    p.principal_model=principal_model
     p.group_model=group_model
     self._setObject(p.getId(), p)
 
@@ -114,6 +115,11 @@ class Plugin(BasePlugin, Cacheable):
               'type'  : 'string',
               'mode'  : 'w',
             },
+            { 'id'    : 'principal_model',
+              'label' : 'SQLAlchemy Principal model (dotted path)',
+              'type'  : 'string',
+              'mode'  : 'w',
+            },
             { 'id'    : 'group_model',
               'label' : 'SQLAlchemy Group model (dotted path)',
               'type'  : 'string',
@@ -121,22 +127,36 @@ class Plugin(BasePlugin, Cacheable):
             })
 
     user_model = "pas.plugins.sqlalchemy.model.User"
+    principal_model = "pas.plugins.sqlalchemy.model.Principal"
     group_model = "pas.plugins.sqlalchemy.model.Group"
 
-    principal_class = model.Principal
+    #principal_class = model.Principal
 
-    def __init__(self, id, title=None, user_model=None, group_model=None):
+    def __init__(self, id, title=None, user_model=None, principal_model=None, group_model=None):
         self.id = self.id = id
         self.title = title
-	if user_model:
-	       self.user_model=user_model
-	if group_model:
-	       self.group_model=group_model
+        if user_model:
+    	    self.user_model=user_model
+        if principal_model:
+            self.principal_model=principal_model
+        if group_model:
+            self.group_model=group_model
 
 
     security.declarePrivate('invalidateCacheForChangedUser')
     def invalidateCacheForChangedUser(self, user_id):
         pass
+
+    @property
+    def principal_class(self):
+        cls=getattr(self, "_v_principal_class", None)
+        if cls is None:
+            try:
+                cls=self._v_principal_class=resolve(self.principal_model)
+            except ImportError, e:
+                logger.error("Unable to import user model: %s", e)
+                cls=self._v_principal_class=model.Principal
+        return cls
 
     @property
     def user_class(self):
