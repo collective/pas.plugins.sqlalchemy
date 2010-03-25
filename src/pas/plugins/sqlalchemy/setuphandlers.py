@@ -41,6 +41,6 @@ def install(context):
     if context.readDataFile('marker.txt') is None:
         return
     portal = context.getSite()
-    session = Session()
-    model.BaseObject.metadata.create_all(session.bind)
+    #session = Session()
+    #model.BaseObject.metadata.create_all(session.bind)
     install_pas_plugin(portal)
