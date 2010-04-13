@@ -156,5 +156,5 @@ class Group(Principal):
     roles = association_proxy("_roles", "name")
 
     def __repr__(self):
-        return "<Group id=%d groupid=%s>" % (self.id, self.groupid)
+        return "<Group id=%d groupid=%s>" % (self.id, self.group_id)
 
