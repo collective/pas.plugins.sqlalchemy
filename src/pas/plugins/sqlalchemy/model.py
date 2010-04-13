@@ -44,7 +44,7 @@ class Principal(BaseObject):
 
     id = schema.Column(types.Integer(), schema.Sequence("principals_id"), primary_key=True)
     type = schema.Column(types.String(5), nullable=False, default="user")
-    zope_id = schema.Column(types.String(16), nullable=False, unique=True)
+    zope_id = schema.Column(types.String(40), nullable=False, unique=True)
 
     __mapper_args__ = dict(polymorphic_on=type)
     _properties = [ ("id", "zope_id" )]
