@@ -619,6 +619,16 @@ class Plugin(BasePlugin, Cacheable):
         group.members.append(principal)
         return True
 
+    def updateGroup(self, id, **kw):
+        """
+        Edit the given group.
+        return True on success
+        """
+        # do nothing actually.
+        # our groups don't have any properties (title, description) that can
+        # be updated.
+        return True
+
     #
     #   IDeleteCapability implementation
     #
