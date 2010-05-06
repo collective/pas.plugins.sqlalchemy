@@ -42,5 +42,5 @@ def install(context):
         return
     portal = context.getSite()
     session = Session()
-    model.Base.metadata.create_all(session.bind)
+    model.BaseObject.metadata.create_all(session.bind)
     install_pas_plugin(portal)
