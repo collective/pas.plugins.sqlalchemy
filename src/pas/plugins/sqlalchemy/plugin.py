@@ -33,6 +33,7 @@ from Products.PlonePAS.interfaces.plugins import IUserManagement
 from Products.PlonePAS.interfaces.capabilities import IDeleteCapability
 from Products.PlonePAS.interfaces.capabilities import IPasswordSetCapability
 from Products.PlonePAS.interfaces.capabilities import IAssignRoleCapability
+from Products.PlonePAS.interfaces.capabilities import IGroupCapability
 from Products.PlonePAS.interfaces.plugins import IMutablePropertiesPlugin
 from Products.PlonePAS.interfaces.group import IGroupIntrospection
 from Products.PlonePAS.interfaces.group import IGroupManagement
@@ -801,6 +802,7 @@ classImplements(
     IGroupsPlugin,
     IGroupEnumerationPlugin,
     IGroupIntrospection,
-    IGroupManagement)
+    IGroupManagement,
+    IGroupCapability)
 
 InitializeClass(Plugin)
