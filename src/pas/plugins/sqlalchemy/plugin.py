@@ -33,6 +33,7 @@ from Products.PlonePAS.interfaces.plugins import IUserManagement
 from Products.PlonePAS.interfaces.capabilities import IDeleteCapability
 from Products.PlonePAS.interfaces.capabilities import IPasswordSetCapability
 from Products.PlonePAS.interfaces.capabilities import IAssignRoleCapability
+from Products.PlonePAS.interfaces.capabilities import IGroupCapability
 from Products.PlonePAS.interfaces.plugins import IMutablePropertiesPlugin
 from Products.PlonePAS.interfaces.group import IGroupIntrospection
 from Products.PlonePAS.interfaces.group import IGroupManagement
@@ -822,6 +823,25 @@ class Plugin(BasePlugin, Cacheable):
         """
         raise AttributeError
 
+    # implement IGroupCapability
+    security.declareProtected( ManageUsers, 'allowGroupAdd' )
+    def allowGroupAdd(self, principal_id, group_id):
+        """True iff this plugin will allow adding a certain principal to a certain group."""
+        present = self.getGroup(group_id)
+        if present: return 1   # if we have a group, we can add users to it
+                                # slightly naive, but should be okay.
+        return 0
+
+    security.declareProtected( ManageUsers, 'allowGroupRemove' )
+    def allowGroupRemove(self, principal_id, group_id):
+        """True iff this plugin will allow removing a certain principal from a certain group."""
+        present = self.getGroup(group_id)
+        if not present: return 0   # if we don't have a group, we can't do anything
+
+        group_members = self.getGroupMembers(group_id)
+        if principal_id in group_members: return 1
+        return 0
+
 
 classImplements(
     Plugin,
@@ -834,6 +854,7 @@ classImplements(
     IRolesPlugin,
     IRoleAssignerPlugin,
     IAssignRoleCapability,
+    IGroupCapability,
     IPropertiesPlugin,
     IMutablePropertiesPlugin,
     IGroupsPlugin,
