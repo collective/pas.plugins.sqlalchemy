@@ -25,7 +25,7 @@ __version__   = '$Revision: 3823 $'[11:-2]
 
 import random
 import string
-import sha
+import hashlib as sha
 import datetime
 
 from sqlalchemy.ext.declarative import declarative_base
@@ -33,6 +33,8 @@ from sqlalchemy import Table, Column, Integer, String, Boolean, DateTime, TIMEST
 from sqlalchemy import Text, Float, ForeignKey, Sequence
 from sqlalchemy.orm import relation
 from sqlalchemy.ext.associationproxy import association_proxy
+
+DEFAULT_DATE = datetime.datetime(1900, 01, 01)
 
 Base = declarative_base()
 
@@ -69,8 +71,8 @@ class User(Principal):
         Sequence("principals_id"),
         primary_key=True)
 
-    login = Column(String, unique=True)
-    name = Column(String, unique=True)
+    login = Column(String(64), unique=True)
+    name = Column(String(64), unique=True)
     password = Column(String)
     salt = Column(String(12))
     enabled = Column(Boolean)
@@ -84,10 +86,10 @@ class User(Principal):
     email = Column(String(40), default=u"")
     portal_skin = Column(String(20), default=u"")
     listed = Column(Integer, default=1)
-    login_time = Column(DateTime)
-    last_login_time = Column(DateTime)
+    login_time = Column(DateTime, default=DEFAULT_DATE)
+    last_login_time = Column(DateTime, default=DEFAULT_DATE)
     fullname = Column(String(40), default=u"")
-    error_log_update = Column(Float)
+    error_log_update = Column(Float, default=0.0)
     home_page = Column(String(40), default=u"")
     location = Column(String(40), default=u"")
     description = Column(Text, default=u"")
@@ -97,12 +99,12 @@ class User(Principal):
     visible_ids = Column(Integer, default=0)
     firstname = Column(String(30), default=u"")
     lastname = Column(String(30), default=u"")
-    join_time = Column(DateTime)
+    join_time = Column(DateTime, default=DEFAULT_DATE)
     gender = Column(String(10), default=u"")
     city = Column(String(20), default=u"")
     date_created = Column(DateTime, nullable=False)
-    date_of_birth = Column(DateTime)
-    date_updated = Column(TIMESTAMP, nullable=True)
+    date_of_birth = Column(DateTime, default=DEFAULT_DATE)
+    date_updated = Column(TIMESTAMP, default=DEFAULT_DATE, nullable=True)
     genres = Column(String(20), default=u"")
     street = Column(String(40), default=u"")
     house_number = Column(String(8), default=u"")
@@ -149,7 +151,7 @@ class Group(Principal):
         Sequence("principals_id"),
         primary_key=True)
 
-    name = Column(String, unique=True)
+    name = Column(String(64), unique=True)
     users = relation(User, secondary=user_groups, backref="groups")
 
     _roles =  relation(
