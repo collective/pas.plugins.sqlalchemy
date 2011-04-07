@@ -31,6 +31,7 @@ from Products.PlonePAS.interfaces.plugins import IUserManagement
 from Products.PlonePAS.interfaces.capabilities import IDeleteCapability
 from Products.PlonePAS.interfaces.capabilities import IPasswordSetCapability
 from Products.PlonePAS.interfaces.capabilities import IAssignRoleCapability
+from Products.PlonePAS.interfaces.capabilities import IGroupCapability
 from Products.PlonePAS.interfaces.plugins import IMutablePropertiesPlugin
 from Products.PlonePAS.interfaces.group import IGroupIntrospection
 from Products.PlonePAS.interfaces.group import IGroupManagement
@@ -128,7 +129,30 @@ class Plugin(BasePlugin, Cacheable):
         if user is not None:
             return True
         return False
+    #
+    # IGroupCapability implementation
+    #
+    @graceful_recovery(False)
+    def allowGroupAdd(self, principal_id, group_id):
+        """True iff this plugin will allow adding a certain principal to a certain group."""
+        session = Session()
+        group = session.query(model.Group).filter_by(name=group_id).first()
+        if group is not None:
+            return True
+        return False
 
+    @graceful_recovery(False)
+    def allowGroupRemove(self, principal_id, group_id):
+        """True iff this plugin will allow removing a certain principal from a certain group."""
+        session = Session()
+        if principal_id in self.getGroupMembers(group_id):
+            return True
+        return False
+
+    @graceful_recovery(False)
+    def canAssignRole(self, role):
+        """True iff member can be assigned role."""
+    
     #
     # IAuthenticationPlugin implementation
     #
@@ -488,7 +512,7 @@ class Plugin(BasePlugin, Cacheable):
         _user = session.query(model.User).filter_by(
             name=user.getUserName()).first()
         for name, value in propertysheet.propertyItems():
-            self.doSetProperty(_user, name, value)
+            self.doSetProperty(_user, name, safeencode(value))
         view_name = createViewName('getPropertiesForUser', user) 
         cached_info = self.ZCacheable_invalidate(view_name=view_name)
 
@@ -590,7 +614,9 @@ class Plugin(BasePlugin, Cacheable):
 
         query = session.query(model.Group)
 
-        if clause:
+        # at least in PostGreSQL, you can't just say "if clause:", or you may get:
+        # TypeError: Boolean value of this clause is not defined
+        if clause is not None:
             query = query.filter(clause)
         if sort_by:
             assert sort_by in ('name',)
@@ -794,7 +820,13 @@ class Plugin(BasePlugin, Cacheable):
 
         session = Session()
         group = session.query(model.Group).filter_by(name=group_id).first()
-        return [user.name for user in group.users]
+        # Unless all groups are going to be migrated to SQL storage, at least 
+        # Administrators and Reviewers exist only in the ZODB, and this return 
+        # value will be None
+        if group is None:
+            return []
+        else:
+            return [user.name for user in group.users]
 
     #
     # IUpdatePlugin implementation
@@ -809,7 +841,7 @@ class Plugin(BasePlugin, Cacheable):
         _user = session.query(model.User).filter_by(
             name=user.getUserName()).first()
         for name, value in set_info.items():
-            self.doSetProperty(_user, name, value)
+            self.doSetProperty(_user, name, safeencode(value))
 
         view_name = createViewName('getPropertiesForUser', user.getUserName())
         cached_info = self.ZCacheable_invalidate(view_name=view_name)
@@ -836,6 +868,7 @@ classImplements(
     IRolesPlugin,
     IRoleAssignerPlugin,
     IAssignRoleCapability,
+    IGroupCapability,
     IPropertiesPlugin,
     IUpdatePlugin,
     IMutablePropertiesPlugin,
