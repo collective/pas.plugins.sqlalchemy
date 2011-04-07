@@ -9,16 +9,19 @@ Setup
 -----
 
 To configure the plugin with a database, use ``z3c.saconfig`` and
-define a named scoped session "pas.plugins.sqlalchemy".
+define a named scoped session "pas.plugins.sqlalchemy" in your configure.zcml 
+or in the "zcml-additional" parameter of the plone.recipe.zope2instance recipe in your buildout.
 
 Example::
 
-  <include package="z3c.saconfig" file="meta.zcml" />
-  <db:engine name="pas" url="postgres://localhost/pas" />
-  <db:session name="pas.plugins.sqlalchemy" engine="pas" />
+  <include package="z3c.saconfig" file="meta.zcml"/>
+  <configure xmlns="http://namespaces.zope.org/db">
+    <engine name="pas" url="postgresql://localhost/pas" />
+        <session name="pas.plugins.sqlalchemy" engine="pas" />
+  </configure>
 
 Install the plugin using the included GenericSetup-profile. Note that
-tables will created automatically on installation.
+tables will be created automatically on installation.
 
 You can reinstall anytime to create non-existing tables. Note that
 tables are preserved on uninstallation.
@@ -41,6 +44,8 @@ Authors
   - Stefan Eletzhofer <stefan.eletzhofer@inquant.de> of InQuant
 
   - Malthe Borch <mborch@gmail.com>
+  
+  - Derek Broughton <auspex@pointerstop.ca>
 
 Contributors
 
@@ -64,6 +69,9 @@ Sponsors
 
   - Thanks to Gis & Web S.r.l. (http://www.gisweb.it) for sponsoring
     the groups management support.
+    
+  - Thanks to the Ocean Tracking Network (http://oceantrackingnetwork.org/) for
+    adding Group Capabilities and migration of existing users.
 
 License
 -------
