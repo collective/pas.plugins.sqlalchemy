@@ -73,7 +73,7 @@ class User(Principal):
 
     login = Column(String(64), unique=True)
     name = Column(String(64), unique=True)
-    password = Column(String)
+    password = Column(String(64))
     salt = Column(String(12))
     enabled = Column(Boolean)
 
