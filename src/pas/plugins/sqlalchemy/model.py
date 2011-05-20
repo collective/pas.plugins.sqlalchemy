@@ -69,8 +69,8 @@ class User(Principal):
         Sequence("principals_id"),
         primary_key=True)
 
-    login = Column(String, unique=True)
-    name = Column(String, unique=True)
+    login = Column(String(64), unique=True, index=True)
+    name = Column(String(64), unique=True, index=True)
     password = Column(String)
     salt = Column(String(12))
     enabled = Column(Boolean)
@@ -86,7 +86,7 @@ class User(Principal):
     listed = Column(Integer, default=1)
     login_time = Column(DateTime)
     last_login_time = Column(DateTime)
-    fullname = Column(String(40), default=u"")
+    fullname = Column(String(40), default=u"", index=True)
     error_log_update = Column(Float)
     home_page = Column(String(40), default=u"")
     location = Column(String(40), default=u"")
@@ -149,7 +149,7 @@ class Group(Principal):
         Sequence("principals_id"),
         primary_key=True)
 
-    name = Column(String, unique=True)
+    name = Column(String(64), unique=True)
     users = relation(User, secondary=user_groups, backref="groups")
 
     _roles =  relation(
