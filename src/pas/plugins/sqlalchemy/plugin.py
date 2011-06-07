@@ -44,6 +44,13 @@ Session = named_scoped_session("pas.plugins.sqlalchemy")
 
 logger = logging.getLogger("pas.plugins.sqlalchemy")
 
+# Define a maximum number of results, to be used in
+# Plugin.enumerateUsers()
+#
+# This mitigates the problem described in:
+#     http://github.com/collective/pas.plugins.sqlalchemy/issues/1
+MAX_RESULTS = 100
+
 def safeencode(v):
     if isinstance(v, unicode):
         return v.encode('utf-8')
@@ -231,7 +238,8 @@ class Plugin(BasePlugin, Cacheable):
         if exact_match and clause is None:
             users = ()
         else:
-            users = query.filter(clause).all()
+            # Limit the number of results to a sane value
+            users = query.filter(clause).limit(MAX_RESULTS).all()
 
         all = {}
         pas = self.aq_parent
