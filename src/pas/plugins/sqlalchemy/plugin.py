@@ -494,7 +494,7 @@ class Plugin(BasePlugin, Cacheable):
         if isinstance(value, DateTime):
             value = datetime.datetime(
                 value.year(), value.month(), value.day(),
-                value.hour(), value.minute(), value.second())
+                value.hour(), value.minute(), int(value.second()))
 
         # if value is a string, make sure it does not exceed the limit
         # (truncate if necessary--this is better than breaking the
