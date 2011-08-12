@@ -129,7 +129,7 @@ class User(Principal):
         return ''.join(random.sample(string.letters, 12))
 
     def encrypt(self, password):
-        return sha.sha(password+self.salt).hexdigest()
+        return sha.sha1(password+self.salt).hexdigest()
 
     def set_password(self, password):
         self.salt = self.generate_salt()
