@@ -492,9 +492,7 @@ class Plugin(BasePlugin, Cacheable):
         if name == 'date_created':
             return
         if isinstance(value, DateTime):
-            value = datetime.datetime(
-                value.year(), value.month(), value.day(),
-                value.hour(), value.minute(), value.second())
+            value = value.utcdatetime()
 
         # if value is a string, make sure it does not exceed the limit
         # (truncate if necessary--this is better than breaking the
