@@ -38,7 +38,6 @@ from Products.PlonePAS.interfaces.group import IGroupIntrospection
 from Products.PlonePAS.interfaces.group import IGroupManagement
 from Products.PlonePAS.sheet import MutablePropertySheet
 from Products.PlonePAS.plugins.group import PloneGroup
-from Products.PlonePAS.utils import getGroupsForPrincipal
 
 from pas.plugins.sqlalchemy import model
 from z3c.saconfig import named_scoped_session
