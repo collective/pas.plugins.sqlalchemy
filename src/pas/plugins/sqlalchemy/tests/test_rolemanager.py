@@ -34,14 +34,14 @@ class TestRoleManager(basetestcase.BaseTestCase):
         self.plugin.doAssignRoleToPrincipal('User1', 'Second')
         result = self.plugin.getRolesForPrincipal("User1")
         self.assertEqual(len(result), 2)
-        self.assertEqual(result[0], 'First')
-        self.assertEqual(result[1], 'Second')
+        self.assertTrue('First' in result)
+        self.assertTrue('Second' in result)
 
         self.plugin.doAssignRoleToPrincipal('User2', 'Third')
         result = self.plugin.getRolesForPrincipal("User1")
         self.assertEqual(len(result), 2)
-        self.assertEqual(result[0], 'First')
-        self.assertEqual(result[1], 'Second')
+        self.assertTrue('First' in result)
+        self.assertTrue('Second' in result)
 
         result = self.plugin.getRolesForPrincipal("User2")
         self.assertEqual(len(result), 1)
@@ -60,11 +60,13 @@ class TestRoleManager(basetestcase.BaseTestCase):
 
         self.plugin.assignRolesToPrincipal(('First', 'Second',), 'User1')
         roles = self.plugin.getRolesForPrincipal('User1')
-        self.assertEqual(roles, ('First', 'Second'))
+        self.assertTrue('First' in roles)
+        self.assertTrue('Second' in roles)
 
         self.plugin.assignRolesToPrincipal(('Third',), 'User2')
         roles = self.plugin.getRolesForPrincipal('User1')
-        self.assertEqual(roles, ('First', 'Second'))
+        self.assertTrue('First' in roles)
+        self.assertTrue('Second' in roles)
         roles = self.plugin.getRolesForPrincipal('User2')
         self.assertEqual(roles, ('Third',))
 
