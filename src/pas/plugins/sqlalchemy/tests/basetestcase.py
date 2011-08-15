@@ -8,10 +8,7 @@ import transaction
 import Products.Five
 
 from Products.Five import zcml
-from Products.Five import fiveconfigure
 
-from Products.PloneTestCase import PloneTestCase as ptc
-from Products.PloneTestCase.layer import onsetup, onteardown
 
 ZopeTestCase.installProduct('PlonePAS')
 ZopeTestCase.installProduct('PluggableAuthService')
@@ -28,31 +25,16 @@ from z3c.saconfig import EngineFactory
 from z3c.saconfig import named_scoped_session
 
 Session = named_scoped_session("pas.plugins.sqlalchemy")
-engine_factory = EngineFactory('sqlite:///:memory:')
-engine = engine_factory()
 
 TEST_TWOPHASE = False
 SANDBOX_ID = 'sandbox'
 CACHE_MANAGER_ID = 'cm_test'
 
-def setup_db():
-    from pas.plugins.sqlalchemy.model import Base
-
-    # Setup the DB connection 
-    Base.metadata.bind = engine
-    Base.metadata.create_all()
-
-    utility = GloballyScopedSession(
-              bind=engine,
-              twophase=TEST_TWOPHASE)
-
-    component.provideUtility(utility, provides=IScopedSession,
-            name="pas.plugins.sqlalchemy")
-
-
 class SQLLayer:
     @classmethod
     def setUp( cls ):
+        from pas.plugins.sqlalchemy.model import Base
+
         testing.setUp()
         zcml.load_config('meta.zcml', Products.Five)
         zcml.load_config('configure.zcml', pas.plugins.sqlalchemy)
@@ -67,8 +49,19 @@ class SQLLayer:
         factory = sandbox.manage_addProduct['StandardCacheManagers']
         factory.manage_addRAMCacheManager(CACHE_MANAGER_ID)
 
-        setup_db()
+        # Setup the DB connection and PAS instances
+        factory = EngineFactory('sqlite:///:memory:')
+        engine = factory()
+        Base.metadata.bind = engine
+        Base.metadata.create_all(engine)
         cls.pas = cls.setupPAS(sandbox)
+
+        utility = GloballyScopedSession(
+                  bind=engine,
+                  twophase=TEST_TWOPHASE)
+
+        component.provideUtility(utility, provides=IScopedSession,
+                name="pas.plugins.sqlalchemy")
 
         transaction.commit()
         ZopeTestCase.close(app)
@@ -117,41 +110,4 @@ class CacheTestCase(BaseTestCase):
         BaseTestCase.beforeTearDown(self)
         self.plugin.ZCacheable_setManagerId(None)
 
-@onsetup
-def setup_sqlpas_functional():
-    fiveconfigure.debug_mode = True
-    import pas.plugins.sqlalchemy
-    zcml.load_config('meta.zcml', Products.Five)
-    zcml.load_config('configure.zcml', pas.plugins.sqlalchemy)
-    fiveconfigure.debug_mode = False
-    setup_db()
-    ZopeTestCase.installPackage('pas.plugins.sqlalchemy')
 
-@onteardown
-def teardown_sqlpas_functional():
-    from pas.plugins.sqlalchemy.model import Base
-    session = Session()
-    Base.metadata.drop_all()
-    transaction.commit()
-
-setup_sqlpas_functional()
-teardown_sqlpas_functional()
-ptc.setupPloneSite(products=['pas.plugins.sqlalchemy'])
-
-class BaseFunctionalTestCase(ptc.FunctionalTestCase):
-    """Test case class used for functional (doc-)tests
-    """
-
-    def afterSetUp(self):
-        # Install pas.plugin.sqlalchemy on Plone site acl_users
-        from pas.plugins.sqlalchemy import setuphandlers
-        setuphandlers.install_pas_plugin(self.portal)
-
-        # Make pas sqlalchemy plugin default plugin type for IUserAdderPlugin interface
-        from Products.PluggableAuthService.interfaces.plugins import IUserAdderPlugin
-        from Products.PluggableAuthService.interfaces.plugins import IRolesPlugin
-        plugins = self.portal.acl_users['plugins']
-        plugins.movePluginsUp(IUserAdderPlugin, ['sql'])
-        plugins.movePluginsUp(IRolesPlugin, ['sql'])
-
-        ptc.FunctionalTestCase.afterSetUp(self)

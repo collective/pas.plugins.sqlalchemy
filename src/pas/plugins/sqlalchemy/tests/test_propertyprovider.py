@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+
 # tests from sqlpasplugin ( GPL v2 )
 
 from pas.plugins.sqlalchemy.tests import basetestcase
