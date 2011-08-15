@@ -15,11 +15,6 @@ Create browser, setup portal and login as Manager.
     >>> browser.getControl(name='__ac_password').value = default_password
     >>> browser.getControl(name='submit').click()
 
-Let's setup pas sqlalchemy plugin:
-
-    >>> from pas.plugins.sqlalchemy import setuphandlers
-    >>> setuphandlers.install_pas_plugin(self.portal)
-
 Open @@usergroup-userprefs view to create new users.
 
     >>> browser.open(portal_url + '/@@usergroup-userprefs')
