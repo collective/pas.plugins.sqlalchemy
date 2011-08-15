@@ -8,7 +8,17 @@ from Testing import ZopeTestCase as ztc
 
 from pas.plugins.sqlalchemy.tests import basetestcase
 
+try: 
+    # Plone 4 and higher 
+    import plone.app.upgrade 
+    HAS_PLONE4 = True
+except ImportError: 
+    HAS_PLONE4 = False
+
 def test_suite():
+    if not HAS_PLONE4:
+        return unittest.TestSuite([])
+
     return unittest.TestSuite([
         ztc.ZopeDocFileSuite(
             'rolemanager.txt', package='pas.plugins.sqlalchemy',

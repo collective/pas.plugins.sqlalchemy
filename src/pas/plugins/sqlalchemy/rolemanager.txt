@@ -1,5 +1,5 @@
 ==============================================================================
-Functional tests using @@usergroup-userprefs view to manage user roles.
+Functional tests with @@usergroup-userprefs view to manage user roles: Plone4
 ==============================================================================
 
 Create browser, setup portal and login as Manager.
@@ -17,7 +17,9 @@ Create browser, setup portal and login as Manager.
 
 Open @@usergroup-userprefs view to create new users.
 
-    >>> browser.open(portal_url + '/@@usergroup-userprefs')
+    >>> browser.open(portal_url)
+    >>> browser.getLink('Site Setup').click()
+    >>> browser.getLink('Users and Groups').click()
     >>> browser.getControl('Add New User').click()
     >>> browser.getControl('Full Name').value = 'Test User1'
     >>> browser.getControl('User Name').value = 'test_user1'
