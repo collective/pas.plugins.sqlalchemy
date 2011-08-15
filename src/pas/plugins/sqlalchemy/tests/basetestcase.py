@@ -8,7 +8,7 @@ import transaction
 import Products.Five
 
 from Products.Five import zcml
-
+from Products.PloneTestCase import PloneTestCase as ptc
 
 ZopeTestCase.installProduct('PlonePAS')
 ZopeTestCase.installProduct('PluggableAuthService')
@@ -110,4 +110,34 @@ class CacheTestCase(BaseTestCase):
         BaseTestCase.beforeTearDown(self)
         self.plugin.ZCacheable_setManagerId(None)
 
+ptc.setupPloneSite(products=['pas.plugins.sqlalchemy'])
 
+class BaseFunctionalTestCase(ptc.FunctionalTestCase):
+    """Test case class used for functional (doc-)tests
+    """
+
+    def afterSetUp(self):
+        ptc.FunctionalTestCase.afterSetUp(self)
+
+        # Setup the DB connection and PAS instances
+        from pas.plugins.sqlalchemy.model import Base
+        factory = EngineFactory('sqlite:///:memory:')
+        engine = factory()
+        Base.metadata.bind = engine
+        Base.metadata.create_all(engine)
+
+        # Install pas.plugin.sqlalchemy on Plone site acl_users
+        from pas.plugins.sqlalchemy import setuphandlers
+        setuphandlers.install_pas_plugin(self.portal)
+
+        # Make pas sqlalchemy plugin default plugin type for IUserAdderPlugin interface
+        from Products.PluggableAuthService.interfaces.plugins import IUserAdderPlugin
+        plugins = self.portal.acl_users['plugins']
+        plugins.movePluginsUp(IUserAdderPlugin, ['sql'])
+
+        # Provide named IScopedSession utility "pas.plugins.sqlalchemy"
+        utility = GloballyScopedSession(
+                  bind=engine,
+                  twophase=TEST_TWOPHASE)
+        component.provideUtility(utility, provides=IScopedSession,
+                name="pas.plugins.sqlalchemy")
