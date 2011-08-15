@@ -85,17 +85,6 @@ def graceful_recovery(default=None, log_args=True):
         return wrapper
     return decorator
 
-#borrow and adapt from new DateTime.DateTime package to make compatible with Plone 3.3.x
-def utcdatetime(instance):
-    """Convert the DateTime instance to UTC then return a timezone naive datetime object"""
-    utc = instance.toZone('UTC')
-    second, microsec = divmod(utc.second(),1)
-    second = int(second)
-    microsec = int(microsec * 1000000)
-    dt = datetime.datetime(utc.year(), utc.month(), utc.day(), utc.hour(),
-                           utc.minute(), second, microsec)
-    return dt
-
 class Plugin(BasePlugin, Cacheable):
     meta_type = 'SQLAlchemy user/group/prop manager'
     security = ClassSecurityInfo()
@@ -525,7 +514,7 @@ class Plugin(BasePlugin, Cacheable):
         if name == 'date_created':
             return
         if isinstance(value, DateTime):
-            value = utcdatetime(value)
+            value = value.utcdatetime()
 
         # if value is a string, make sure it does not exceed the limit
         # (truncate if necessary--this is better than breaking the
