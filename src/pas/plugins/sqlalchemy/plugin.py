@@ -436,7 +436,8 @@ class Plugin(BasePlugin, Cacheable):
         # Some services need to determine the roles obtained from groups
         # while excluding the directly assigned roles.  In this case
         # '__ignore_direct_roles__' = True should be pushed in the request.
-        request = aq_get(self, 'REQUEST', None)
+        aq_request = aq_get(self, 'REQUEST', None)
+        request = request or aq_request
         if request is None or \
             not request.get('__ignore_direct_roles__', False):
             roles.update(principal_obj.roles)
