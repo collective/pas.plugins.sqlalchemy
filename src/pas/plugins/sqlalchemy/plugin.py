@@ -6,6 +6,7 @@ import traceback
 
 from AccessControl import ClassSecurityInfo
 from AccessControl.SecurityManagement import getSecurityManager
+from Acquisition import aq_get
 from Globals import InitializeClass
 from Products.PluggableAuthService.utils import classImplements
 from Products.PluggableAuthService.plugins.BasePlugin import BasePlugin
@@ -415,24 +416,46 @@ class Plugin(BasePlugin, Cacheable):
 
         o May assign roles based on values in the REQUEST object, if present.
         """
-
+        roles = set([])
+        principal_ids = set([])
         principal_id = principal
-        if not isinstance(principal_id, basestring):
+
+        if not isinstance(principal, basestring):
             principal_id = principal.getId()
+
         view_name = createViewName('getRolesForPrincipal', principal_id)
         cached_info = self.ZCacheable_get(view_name)
         if cached_info is not None:
             return cached_info
 
         session = Session()
-
-        principal = self.getPrincipal(principal)
-        if principal is None:
+        principal_obj = self.getPrincipal(principal_id)
+        if principal_obj is None:
             return ()
 
-        roles = tuple(principal.roles)
-        self.ZCacheable_set(roles, view_name)
-        return roles
+        # Some services need to determine the roles obtained from groups
+        # while excluding the directly assigned roles.  In this case
+        # '__ignore_direct_roles__' = True should be pushed in the request.
+        aq_request = aq_get(self, 'REQUEST', None)
+        request = request or aq_request
+        if request is None or \
+            not request.get('__ignore_direct_roles__', False):
+            roles.update(principal_obj.roles)
+            
+        # Some services may need the real roles of an user but **not**
+        # the ones he got through his groups. In this case, the
+        # '__ignore_group_roles__'= True should be previously pushed
+        # in the request.
+        if request is None or \
+            not request.get('__ignore_group_roles__', False):
+            #only user objects have groups attribute
+            if hasattr(principal_obj, 'groups'):
+                for group in principal_obj.groups:
+                    roles.update(group.roles)
+
+        result = tuple(roles)
+        self.ZCacheable_set(result, view_name)
+        return result
 
     @graceful_recovery()
     def getPropertiesForUser(self, user, request=None):
