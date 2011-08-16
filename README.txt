@@ -32,6 +32,19 @@ Memberdata
 The users table has an extensive number of metadata fields; it's on
 the to-do to figure out a nice way to make this pluggable.
 
+Plone3.x compatibility
+----------------------
+
+This product should work with Zope2.9 and Python2.4.
+You only need a new version of DateTime package.
+On your buildout add DateTime to eggs:
+
+[buildout]
+...
+eggs = 
+    ...
+    DateTime==2.12.6
+
 Credits
 -------
 

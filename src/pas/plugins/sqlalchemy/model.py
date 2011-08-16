@@ -25,7 +25,10 @@ __version__   = '$Revision: 3823 $'[11:-2]
 
 import random
 import string
-import hashlib as sha
+try:
+    from hashlib import sha1 as sha
+except:
+    from sha import sha
 import datetime
 
 from sqlalchemy.ext.declarative import declarative_base
@@ -129,7 +132,7 @@ class User(Principal):
         return ''.join(random.sample(string.letters, 12))
 
     def encrypt(self, password):
-        return sha.sha1(password+self.salt).hexdigest()
+        return sha(password+self.salt).hexdigest()
 
     def set_password(self, password):
         self.salt = self.generate_salt()
