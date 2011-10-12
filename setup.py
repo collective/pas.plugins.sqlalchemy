@@ -13,6 +13,7 @@ requires = [
     'SQLAlchemy',
     'z3c.saconfig',
     'zope.sqlalchemy',
+    'DateTime>=2.11',
     ]
 
 tests_requires = requires + ['pysqlite']
