@@ -5,6 +5,7 @@ from sqlalchemy import sql
 import traceback
 
 from zope.dottedname.resolve import resolve
+from zope.event import notify
 from Acquisition import aq_get
 from AccessControl import ClassSecurityInfo
 from AccessControl.SecurityManagement import getSecurityManager
@@ -16,6 +17,7 @@ from Products.PluggableAuthService.plugins.BasePlugin import BasePlugin
 from Products.PluggableAuthService.permissions import ManageUsers, ManageGroups
 from Products.PluggableAuthService.permissions import SetOwnPassword
 from Products.PluggableAuthService.utils import createViewName
+from Products.PluggableAuthService.events import PropertiesUpdated
 from OFS.Cache import Cacheable
 from DateTime import DateTime
 
@@ -629,8 +631,22 @@ class Plugin(BasePlugin, Cacheable):
         session = Session()
         principal = session.query(self.principal_class).\
                 filter_by(zope_id=user.getId()).first()
-        for name, value in propertysheet.propertyItems():
+
+        properties = propertysheet.propertyItems()
+        for name, value in properties:
             self.doSetProperty(principal, name, value)
+
+        try:
+            event = PropertiesUpdated(user, properties)
+        except TypeError:
+            # BBB: See Launchpad #795086
+            event = object.__new__(PropertiesUpdated)
+            event.object = user
+            event.principal = user
+            event.properties = properties
+
+        # XXX: This event is not fired by PAS!
+        notify(event)
 
         view_name = createViewName('getPropertiesForUser', user)
         self.ZCacheable_invalidate(view_name=view_name)

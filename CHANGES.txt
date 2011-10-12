@@ -4,6 +4,10 @@ Changelog
 0.3 (unreleased)
 ----------------
 
+- Fire `IPropertiesUpdated` (from PAS) event on `setPropertiesForUser`
+  to allow components to take action when user properties are updated.
+  [malthe]
+
 - Merged SVN repository (select branches) into the existing Github
   repository to consolidate improvements.
   [malthe]
