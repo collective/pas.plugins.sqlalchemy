@@ -1,8 +1,11 @@
 
 # tests from sqlpasplugin ( GPL v2 )
 
+from Products.PlonePAS.sheet import MutablePropertySheet
+
 from pas.plugins.sqlalchemy.tests import basetestcase
 from pas.plugins.sqlalchemy.setuphandlers import plugin_name
+from pas.plugins.sqlalchemy.tests.basetestcase import TrivialUser
 
 class TestUserManager(basetestcase.BaseTestCase):
 
@@ -48,6 +51,8 @@ class TestEnumerateUsers(basetestcase.BaseTestCase):
         self.plugin.doAddUser('user_2', 'password')
         self.plugin.doAddUser('foo_user_1', 'password')
         self.plugin.doAddUser('bar', 'password')
+        self.user=TrivialUser('user_1')
+
 
     def testNoIdAndNoLoginNoExact(self):
         ret = self.plugin.enumerateUsers()
@@ -103,22 +108,6 @@ class TestEnumerateUsers(basetestcase.BaseTestCase):
         ret = self.plugin.enumerateUsers(id=['user_1', 'foo'])
         self.assertEqual(len(ret), 2) # user_1, foo_user_11
 
-    def testIdStringAndLoginStringNoExact(self):
-        ret = self.plugin.enumerateUsers(id='user_1', login='bar')
-        self.assertEqual(len(ret), 3) # user_1, foo_user_11, bar
-
-    def testIdStringAndLoginStringExact(self):
-        ret = self.plugin.enumerateUsers(id='user', login='bar', exact_match=True)
-        self.assertEqual(len(ret), 1) # bar
-
-    def testIdListAndLoginStringNoExact(self):
-        ret = self.plugin.enumerateUsers(id=['2', '3'], login='4')
-        self.assertEqual(len(ret), 1) # user_2
-
-    def testIdStringAndLoginListNoExact(self):
-        ret = self.plugin.enumerateUsers(id='5', login=['0', '2', '8'])
-        self.assertEqual(len(ret), 1) # user_2
-
     def testMaxResultsZero(self):
         ret = self.plugin.enumerateUsers(max_results=0)
         self.assertEqual(len(ret), 0)
@@ -131,6 +120,21 @@ class TestEnumerateUsers(basetestcase.BaseTestCase):
         ret = self.plugin.enumerateUsers(max_results=10)
         self.assertEqual(len(ret), 4)
 
+    def testEnumerateNoAscii(self):
+        info = {
+            'fullname': u'J\xfcrgen Schmoe',
+        }
+        sheet = MutablePropertySheet("memberdata", **info)
+        self.plugin.setPropertiesForUser(self.user, sheet)
+        props = self.plugin.getPropertiesForUser(self.user)
+        self.assertEqual(props.getProperty('fullname'), u'J\xfcrgen Schmoe')
+        ret = self.plugin.enumerateUsers(fullname='Schmoe')
+        self.assertEqual(len(ret), 1)
+        ret = self.plugin.enumerateUsers(fullname=u'J\xfcrgen')
+        self.assertEqual(len(ret), 1)
+        ret = self.plugin.enumerateUsers(fullname='Not There')
+        self.assertEqual(len(ret), 0)
+        
 
 def test_suite( ):
     from unittest import TestSuite, makeSuite

@@ -9,6 +9,9 @@ import Products.Five
 
 from Products.Five import zcml
 
+#from Products.CMFPlone.tests import PloneTestCase
+#from Products.PloneTestCase.layer import PloneSite
+
 
 ZopeTestCase.installProduct('PlonePAS')
 ZopeTestCase.installProduct('PluggableAuthService')
@@ -29,6 +32,16 @@ Session = named_scoped_session("pas.plugins.sqlalchemy")
 TEST_TWOPHASE = False
 SANDBOX_ID = 'sandbox'
 CACHE_MANAGER_ID = 'cm_test'
+
+class TrivialUser:
+    def __init__(self, id):
+        self.id=id
+    def getId(self):
+        return self.id
+    def getUserName(self):
+        return self.id
+    def isGroup(self):
+        return False
 
 class SQLLayer:
     @classmethod
@@ -90,7 +103,7 @@ class SQLLayer:
 class BaseTestCase(ZopeTestCase.ZopeTestCase):
     layer = SQLLayer
     username = u'j\xfcrgen'
-    password = u'passw0rd'
+    password = 'passw0rd'
 
     def getPAS( self ):
         return self.layer.pas

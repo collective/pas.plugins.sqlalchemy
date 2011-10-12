@@ -2,7 +2,8 @@
    xmlns="http://namespaces.zope.org/zope"
    xmlns:genericsetup="http://namespaces.zope.org/genericsetup"
    xmlns:zcml="http://namespaces.zope.org/zcml"
-   xmlns:five="http://namespaces.zope.org/five">
+   xmlns:five="http://namespaces.zope.org/five"
+   i18n_domain="pas.plugins.sqlachemy">
 
   <five:registerPackage package="." initialize=".initialize" />
   <include package="Products.GenericSetup" file="meta.zcml" />

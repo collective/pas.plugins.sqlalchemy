@@ -1,0 +1,46 @@
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:tal="http://xml.zope.org/namespaces/tal">
+  <body>
+    <h1 tal:replace="structure here/manage_page_header">Header</h1>
+
+    <h2 tal:define="form_title string:SQLAlchemy Plugin"
+        tal:replace="structure here/manage_form_title">Form Title</h2>
+
+    <p class="form-help">
+      The SQLAlchemy plugin allows using users and groups in a SQL database.
+    </p>
+
+    <form action="addSqlalchemyPlugin" method="post">
+      <table>
+        <tr>
+          <td class="form-label">Id</td>
+          <td><input type="text" name="id" tal:attributes="value request/id|string:sql"/></td>
+        </tr>
+        <tr>
+          <td class="form-label">Title</td>
+          <td><input type="text" name="title"/></td>
+        </tr>
+        <tr>
+          <td class="form-label">Principal model</td>
+          <td><input type="text" name="principal_model" tal:attributes="value request/user_model|string:pas.plugins.sqlalchemy.model.Principal"/></td>
+        </tr>
+        <tr>
+          <td class="form-label">User model</td>
+          <td><input type="text" name="user_model" tal:attributes="value request/user_model|string:pas.plugins.sqlalchemy.model.User"/></td>
+        </tr>
+        <tr>
+          <td class="form-label">Group model</td>
+          <td><input type="text" name="group_model" tal:attributes="value request/user_model|string:pas.plugins.sqlalchemy.model.Group"/></td>
+        </tr>
+        <tr>
+          <td colspan="2">
+            <div class="form-element">
+              <input type="submit" value="add plugin"/>
+            </div>
+          </td>
+        </tr>
+      </table>
+    </form>
+  </body>
+</html>
+

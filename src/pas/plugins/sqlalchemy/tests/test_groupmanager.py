@@ -251,6 +251,7 @@ class TestGroupManager( basetestcase.BaseTestCase ):
         self.source_groups.removeGroup(self.groupname)
 
 
+
 def test_suite( ):
     from unittest import TestSuite, makeSuite
     suite = TestSuite()

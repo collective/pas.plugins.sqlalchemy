@@ -18,38 +18,43 @@
 #  along with this program; if not, write to the Free Software
 #  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-__author__    = """Stefan Eletzhofer <stefan.eletzhofer@inquant.de>"""
-__docformat__ = 'plaintext'
-__revision__  = "$Revision: 3823 $"
-__version__   = '$Revision: 3823 $'[11:-2]
-
 import random
 import string
+import datetime
+
 try:
     from hashlib import sha1 as sha
 except:
     from sha import sha
-import datetime
+
 
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import Table, Column, Integer, String, Boolean, DateTime, TIMESTAMP
+from sqlalchemy.sql import functions
+from sqlalchemy import Table, Column, Integer, String, Boolean, \
+        DateTime
 from sqlalchemy import Text, Float, ForeignKey, Sequence
 from sqlalchemy.orm import relation
 from sqlalchemy.ext.associationproxy import association_proxy
-
-DEFAULT_DATE = datetime.datetime(1900, 01, 01)
+from sqlalchemy.ext.declarative import synonym_for
 
 Base = declarative_base()
 
-user_groups = Table('user_groups', Base.metadata,
-    Column('user_id', Integer, ForeignKey('users.id')),
-    Column('group_id', Integer, ForeignKey('groups.id'))
+group_member_table = Table('group_members', Base.metadata,
+    Column('group_id', Integer, ForeignKey('groups.id'), primary_key=True),
+    Column('principal_id', Integer, ForeignKey('principals.id'), primary_key=True),
 )
+
 
 class Principal(Base):
     __tablename__ = "principals"
 
     id = Column(Integer, Sequence("principals_id"), primary_key=True)
+    type = Column(String(5), nullable=False, default="user")
+    zope_id = Column(String(40), nullable=False, unique=True, index=True)
+
+    __mapper_args__ = {'polymorphic_on': type}
+    _properties = [("id", "zope_id")]
+
 
 class RoleAssignment(Base):
     __tablename__ = "role_assignments"
@@ -62,23 +67,22 @@ class RoleAssignment(Base):
         self.name = name
 
     def __repr__(self):
-        return "<RoleAssignment id=%s principal_id=%d name=%s>" % (
-            self.id, self.principal_id, self.name)
+        return ("<RoleAssignment id=%s principal_id=%d name=%s>" % (
+            str(self.id), self.principal_id, self.name)).encode('utf-8')
+
 
 class User(Principal):
     __tablename__ = "users"
+    __mapper_args__ = {'polymorphic_identity': 'user'}
 
-    id = Column(
-        Integer,
-        ForeignKey(Principal.id),
-        Sequence("principals_id"),
-        primary_key=True)
+    user_id = Column("id", Integer, ForeignKey(Principal.id),
+            primary_key=True)
 
-    login = Column(String(64), unique=True)
-    name = Column(String(64), unique=True)
-    password = Column(String(64))
-    salt = Column(String(12))
-    enabled = Column(Boolean)
+    login = Column(String(64), unique=True, index=True)
+    #name = Column(String, unique=True) # is replaced by zope_id on the parent class/table, common for groups and users.
+    _password = Column("password", String(64))
+    _salt = Column("salt", String(12))
+    enabled = Column(Boolean(), nullable=False, default=True, index=True)
 
     # roles
     _roles =  relation(
@@ -86,13 +90,13 @@ class User(Principal):
     roles = association_proxy("_roles", "name")
 
     # memberdata property sheet
-    email = Column(String(40), default=u"")
+    email = Column(String(40), default=u"", index=True)
     portal_skin = Column(String(20), default=u"")
     listed = Column(Integer, default=1)
-    login_time = Column(DateTime, default=DEFAULT_DATE)
-    last_login_time = Column(DateTime, default=DEFAULT_DATE)
-    fullname = Column(String(40), default=u"")
-    error_log_update = Column(Float, default=0.0)
+    login_time = Column(DateTime(), default=functions.now())
+    last_login_time = Column(DateTime(), default=functions.now())
+    fullname = Column(String(40), default=u"", index=True)
+    error_log_update = Column(Float, default=0)
     home_page = Column(String(40), default=u"")
     location = Column(String(40), default=u"")
     description = Column(Text, default=u"")
@@ -100,34 +104,36 @@ class User(Principal):
     ext_editor = Column(Integer, default=0)
     wysiwyg_editor = Column(String(10), default="")
     visible_ids = Column(Integer, default=0)
-    firstname = Column(String(30), default=u"")
-    lastname = Column(String(30), default=u"")
-    join_time = Column(DateTime, default=DEFAULT_DATE)
-    gender = Column(String(10), default=u"")
-    city = Column(String(20), default=u"")
-    date_created = Column(DateTime, nullable=False)
-    date_of_birth = Column(DateTime, default=DEFAULT_DATE)
-    date_updated = Column(TIMESTAMP, default=DEFAULT_DATE, nullable=True)
-    genres = Column(String(20), default=u"")
-    street = Column(String(40), default=u"")
-    house_number = Column(String(8), default=u"")
-    zip_code = Column(String(5), default=u"")
-    sport = Column(String(20), default=u"")
-    car = Column(String(20), default=u"")
-    income = Column(String(15), default=u"")
-    family_status = Column(String(15), default=u"")
-    education = Column(String(25), default=u"")
-    flags = Column(Integer, default=0)
-    country = Column(String(20), default=u"")
-    cell_number = Column(String(15), default=u"")
 
-    def __init__(self, login=None, name=None, password=None):
-        self.name = name
-        self.login = login
-        self.password = password
-        self.salt = self.generate_salt()
-        self.date_created = datetime.datetime.now()
+    _properties = [ ("id", "zope_id" ),
+                    ("login", "login" ),
+                    ("email", "email" ),
+                    ("portal_skin", "portal_skin" ),
+                    ("listed", "listed" ),
+                    ("login_time", "login_time" ),
+                    ("last_login_time", "last_login_time" ),
+                    ("fullname", "fullname" ),
+                    ("error_log_update", "error_log_update" ),
+                    ("home_page", "home_page" ),
+                    ("location", "location" ),
+                    ("description", "description" ),
+                    ("language", "language" ),
+                    ("ext_editor", "ext_editor" ),
+                    ("wysiwyg_editor", "wysiwyg_editor" ),
+                    ("visible_ids", "visible_ids" ),
+                    ]
 
+    # Make password read-only
+    @synonym_for("_password")
+    @property
+    def password(self):
+        return self._password
+
+    @synonym_for("_salt")
+    @property
+    def salt(self):
+        return self._salt
+    
     def generate_salt(self):
         return ''.join(random.sample(string.letters, 12))
 
@@ -135,36 +141,39 @@ class User(Principal):
         return sha(password+self.salt).hexdigest()
 
     def set_password(self, password):
-        self.salt = self.generate_salt()
-        self.password = self.encrypt(password)
+        self._salt = self.generate_salt()
+        self._password = self.encrypt(password)
 
     def check_password(self, password):
         return self.encrypt(password) == self.password
 
     def __repr__(self):
-        return "<User id=%d login=%s name=%s>" % (
-            self.id, self.login, self.name)
+        return ("<User id=%s login=%s name=%s>" % (
+            str(self.id), self.login, self.zope_id)).encode('utf-8')
 
 class Group(Principal):
     __tablename__ = "groups"
+    __mapper_args__ = {"polymorphic_identity": "group"}
 
-    id = Column(
-        Integer,
-        ForeignKey(Principal.id),
-        Sequence("principals_id"),
-        primary_key=True)
+    group_id = Column("id", Integer(), ForeignKey(Principal.id),
+            primary_key=True)
+    title = Column(String(40), default=u"")
+    description = Column(String(40), default=u"")
+    email = Column(String(40), default=u"")
 
-    name = Column(String(64), unique=True)
-    users = relation(User, secondary=user_groups, backref="groups")
+    members = relation(Principal, secondary=group_member_table, backref="groups")
 
     _roles =  relation(
         RoleAssignment, collection_class=set, cascade="all, delete, delete-orphan")
     roles = association_proxy("_roles", "name")
 
-    def __init__(self, name=None):
-        self.name = name
-
+    _properties = [("id", "zope_id" ),
+                   ("title", "title" ),
+                   ("description", "description" ),
+                   ("email", "email" ),
+                   ]
+    
     def __repr__(self):
-        return "<Group id=%d name=%s>" % (self.id, self.name)
+        return ("<Group id=%d name=%s>" % (
+            str(self.id), self.zope_id)).encode('utf-8')
 
-# vim: set ft=python ts=4 sw=4 expandtab :

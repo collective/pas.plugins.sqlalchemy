@@ -1,11 +1,74 @@
 Changelog
 =========
 
-In next release...
+0.3 (unreleased)
+----------------
+
+- Merged SVN repository (select branches) into the existing Github
+  repository to consolidate improvements.
+  [malthe]
+
+- Add title and description to groups.
+
+  GetRolesForPrincipal needs to listen to __ignore_group_roles__ and
+  __ignore_direct_roles__ from the request to work with plone 4.
+  GetRolesForPrincipal needs to take group roles into account as
+  default.
+  [sunew]
+
+- Merged many changes from the branches: wichert-flexible,
+  wichert-flexible-pw-encryption, zedr-mysql-optimized, auspex.
+
+  Version 0.3 is not compatible with the earlier versions, upgrading
+  will require some migration (not included).
+  [sunew]
+
+- Seperate user_id and login - as in PAS. (Not complete?)
+  [wichert]
+
+- Refactor user, group, and principal classes to enable more sharing
+  of functionality between groups and users.
+  [wichert]
+
+- Length of varchars to be compatible with MySQL
+  [auspex, wichert, sunew, zedr]
+
+- Cleaned up the properties - only the plone properties are in the
+  model now. Override the model if you need more fields.
+  [sunew]
+
+- Password and salt readonly.
+  [wichert, sunew]
+
+- remove IUpdatePlugin related stuff. Not used.
+  [wichert]
+
+- Make models configurable via dotted path zmi properties.
+  [wichert]
+
+- Also make the Principal class configurable.
+  [sunew]
+
+- Add missing security declarations (match those for the same methods
+  in PlonePAS and PluggableAuthService).
+  [sunew]
+
+- Fully implement IRoleAssignerPlugin: missed doRemoveRoleFromPrincipal.
+  [sunew]
+
+- More tests, tests pass for plone 4.0.7.
+  [sunew]
+
+
+0.2.1 (unreleased)
+------------------------
+
+- Fixed some tests. Now tests passes on plone 4.0.7.
+  [sunew]
 
 - Convert to and from UTF-8 and unicode. Plone uses UTF-8 internally
   and most Python deployments will coerce using the 'ascii' codec,
-  resulting in unicode decode errors.
+  resulting in unicode decode errors. [mborch]
 
 0.2 (released 2009/7/17)
 ------------------------

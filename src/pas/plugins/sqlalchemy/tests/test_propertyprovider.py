@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+# -*- encoding: utf-8 -*-
 # tests from sqlpasplugin ( GPL v2 )
 
 from pas.plugins.sqlalchemy.tests import basetestcase
@@ -9,14 +9,7 @@ from Products.PlonePAS.sheet import MutablePropertySheet
 
 _marker = []
 
-class TrivialUser:
-    def __init__(self, id):
-        self.id=id
-    def getUserName(self):
-        return self.id
-    def isGroup(self):
-        return False
-
+from pas.plugins.sqlalchemy.tests.basetestcase import TrivialUser
 
 class TestPropertyProvider(basetestcase.BaseTestCase):
 
@@ -31,15 +24,13 @@ class TestPropertyProvider(basetestcase.BaseTestCase):
         props = self.source_properties.getPropertiesForUser(self.user)
         propmap = dict([(p['id'], p) for p in props.propertyMap()])
         self.assertTrue(
-            set(['firstname', 'lastname', 'email', 'date_created' ]).issubset(
+            set(['fullname', 'email', 'login_time' ]).issubset(
                 set(propmap)))
 
-        self.assertEqual(propmap['date_created'],
-                {'type': 'date', 'id': 'date_created', 'mode': ''})
-        self.assertEqual(propmap['firstname'],
-                {'type': 'string', 'id': 'firstname', 'mode': ''})
-        self.assertEqual(propmap['lastname'],
-                {'type': 'string', 'id': 'lastname', 'mode': ''})
+        self.assertEqual(propmap['login_time'],
+                {'type': 'date', 'id': 'login_time', 'mode': ''})
+        self.assertEqual(propmap['fullname'],
+                {'type': 'string', 'id': 'fullname', 'mode': ''})
         self.assertEqual(propmap['email'],
                 {'type': 'string', 'id': 'email', 'mode': ''})
 
@@ -54,23 +45,28 @@ class TestPropertyProvider(basetestcase.BaseTestCase):
 
     def testPropertyDefaultValue(self):
         props = self.source_properties.getPropertiesForUser(self.user)
-        self.assertEqual(props.getProperty("firstname"), "")
+        self.assertEqual(props.getProperty("fullname"), "")
 
     def testPropertyLoadedFromSQL(self):
         value = 'snakes in a train'
         self.source_properties.setPropertiesForUser(
-            self.user, MutablePropertySheet("memberdata", firstname=value))
+            self.user, MutablePropertySheet("memberdata", fullname=value))
         props = self.source_properties.getPropertiesForUser(self.user)
-        self.assertEqual(props.getProperty("firstname"), value)
+        self.assertEqual(props.getProperty("fullname"), value)
 
-    def testUpdateUserInfo(self):
+    def testSetPropertiesForUser(self):
+        props = self.source_properties.getPropertiesForUser(self.user)
+        self.assertEqual(props.getProperty('fullname'), u'')
+        self.assertEqual(props.getProperty('email'), u'')
+        # The plugin should (at least in plone 4) return what it is given - this is the behaviour
+        # of the PlonePAS property plugin. If it is unicode, it will later be converted to utf-8.
+        # (In PlonePAS/plugins/ufactory.py(220)getProperty())
         info = {
-            'firstname': 'Jürgen',
-            'lastname': 'Schmoe',
+            'fullname': u'J\xfcrgen Schmoe',
             'email': 'joe@localhost.localdomain'
         }
-        self.source_properties.updateUserInfo(user=self.user,
-                set_id=None, set_info=info)
+        sheet = MutablePropertySheet("memberdata", **info)
+        self.source_properties.setPropertiesForUser(self.user, sheet)
         props = self.source_properties.getPropertiesForUser(self.user)
         for name, value in info.items():
             self.assertTrue(name in props.propertyIds())
@@ -122,8 +118,11 @@ class TestPropertyCaching(basetestcase.CacheTestCase):
 
     def testUpdateZapsCache(self):
         props = self.plugin.getPropertiesForUser(self.user)
-        self.plugin.updateUserInfo(self.user, set_id=None,
-                set_info=dict(firstname='Jane'))
+        info = {
+            'fullname': u'Jane Doe',
+        }
+        sheet = MutablePropertySheet("memberdata", **info)
+        self.plugin.setPropertiesForUser(self.user, sheet)
 
         view_name = createViewName('getPropertiesForUser', self.username)
         user = self.plugin.ZCacheable_get(

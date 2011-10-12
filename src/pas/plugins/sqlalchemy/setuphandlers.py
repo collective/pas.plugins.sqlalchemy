@@ -6,6 +6,7 @@ Session = named_scoped_session("pas.plugins.sqlalchemy")
 
 plugin_name = "sql"
 
+
 def install_pas_plugin(self):
     pas = self.acl_users
     if not plugin_name in pas.objectIds():
@@ -23,8 +24,8 @@ def install_pas_plugin(self):
             'IUserAdderPlugin',
             'IRolesPlugin',
             'IRoleAssignerPlugin',
-            'IPropertiesPlugin',
-            'IUpdatePlugin'])
+            'IPropertiesPlugin'])
+
 
 def uninstall_pas_plugin(self):
     pas = self.acl_users
@@ -32,11 +33,13 @@ def uninstall_pas_plugin(self):
         pas[plugin_name].manage_activateInterfaces([])
         pas.manage_delObjects([plugin_name])
 
+
 def uninstall(context):
     if context.readDataFile('marker.txt') is None:
         return
     portal = context.getSite()
     uninstall_pas_plugin(portal)
+
 
 def install(context):
     if context.readDataFile('marker.txt') is None:
