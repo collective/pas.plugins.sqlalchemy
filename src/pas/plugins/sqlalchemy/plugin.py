@@ -404,7 +404,7 @@ class Plugin(BasePlugin, Cacheable):
 
     security.declarePrivate('doRemoveRolesFromPrincipal')
     def doRemoveRolesFromPrincipal(self, roles, principal_id):
-        principal = self.getPrincipal(principal_id)
+        principal = self._get_principal_by_id(principal_id)
         for role in roles:
             principal.roles.remove(role)
 
@@ -450,7 +450,7 @@ class Plugin(BasePlugin, Cacheable):
         o Return a Boolean indicating whether the role was assigned or not
         """
 
-        principal = self.getPrincipal(principal_id)
+        principal = self._get_principal_by_id(principal_id)
         if principal is None or role in principal.roles:
             return False
 
@@ -463,14 +463,6 @@ class Plugin(BasePlugin, Cacheable):
             self.ZCacheable_invalidate(view_name)
 
         return True
-
-    @graceful_recovery()
-    def getPrincipal(self, principal_id):
-        session = Session()
-        query = session.query(self.principal_class).filter_by(
-            zope_id=principal_id
-            )
-        return query.first()
 
     security.declarePrivate('getRolesForPrincipal')
     @graceful_recovery(())
@@ -522,7 +514,7 @@ class Plugin(BasePlugin, Cacheable):
         if cached_info is not None:
             return cached_info
 
-        sql_principal = self.getPrincipal(principal_id)
+        sql_principal = self._get_principal_by_id(principal_id)
         if sql_principal is None:
             return ()
 
@@ -533,7 +525,7 @@ class Plugin(BasePlugin, Cacheable):
                 principal_ids.update(groups)
 
         for pid in principal_ids:
-            sql_principal = self.getPrincipal(pid)
+            sql_principal = self._get_principal_by_id(pid)
             if sql_principal:
                 roles.update(sql_principal.roles)
 
@@ -842,7 +834,7 @@ class Plugin(BasePlugin, Cacheable):
     def allowDeletePrincipal(self, principal_id):
         """True if this plugin can delete a certain principal."""
 
-        return self.getPrincipal(principal_id) is not None
+        return self._get_principal_by_id(principal_id) is not None
 
     #
     #   IGroupCapability implementation
@@ -979,6 +971,13 @@ class Plugin(BasePlugin, Cacheable):
             roles = rolemaker.getRolesForPrincipal(principal, request=None)
             if roles:
                 yield roles
+
+    def _get_principal_by_id(self, principal_id):
+        session = Session()
+        query = session.query(self.principal_class).filter_by(
+            zope_id=principal_id
+            )
+        return query.first()
 
 
 classImplements(
