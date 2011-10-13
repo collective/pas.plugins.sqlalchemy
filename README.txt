@@ -69,14 +69,34 @@ following content::
 More information is available in the package description.
 
 
-Memberdata
-----------
+Custom principal, user and group model
+--------------------------------------
 
-You can plugin other classes with your custom memberdata
-columns. There are three zmi properties for the principal, user and
-group classes dotted paths.
+You can register your own SQLAlchemy-based model class for all three
+categories.
 
-TODO: Example.
+The required class interfaces (required methods and attributes) are
+described in the ``interfaces`` module. Note that you can simply
+subclass from the default models which implement the required
+interfaces.
+
+The settings are accessible in the ZMI. You can also use a custom
+setup handler.
+
+Example::
+
+    def setup_pas_plugin(self):
+        pas = self.acl_users
+        plugin = pas['sql']
+
+        plugin.manage_changeProperties(
+           user_model="my_package.model.User",
+           principal_model="my_package.model.Principal",
+           group_model="my_package.model.Group"
+           )
+
+You may need to make sure the plugins are prioritized higher than the
+default ones (typically ZODB-based).
 
 
 Wishlist
