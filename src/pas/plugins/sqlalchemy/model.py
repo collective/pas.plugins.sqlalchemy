@@ -27,6 +27,7 @@ try:
 except:
     from sha import sha
 
+from zope.interface import implements
 
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.sql import functions
@@ -36,6 +37,9 @@ from sqlalchemy import Text, Float, ForeignKey, Sequence
 from sqlalchemy.orm import relation
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.ext.declarative import synonym_for
+
+from pas.plugins.sqlalchemy.interfaces import IEncryptedPasswordAware
+from pas.plugins.sqlalchemy.interfaces import IUser
 
 Base = declarative_base()
 
@@ -72,6 +76,8 @@ class RoleAssignment(Base):
 
 
 class User(Principal):
+    implements(IUser, IEncryptedPasswordAware)
+
     __tablename__ = "users"
     __mapper_args__ = {'polymorphic_identity': 'user'}
 
@@ -133,7 +139,7 @@ class User(Principal):
     @property
     def salt(self):
         return self._salt
-    
+
     def generate_salt(self):
         return ''.join(random.sample(string.letters, 12))
 
@@ -172,7 +178,7 @@ class Group(Principal):
                    ("description", "description" ),
                    ("email", "email" ),
                    ]
-    
+
     def __repr__(self):
         return ("<Group id=%d name=%s>" % (
             str(self.id), self.zope_id)).encode('utf-8')
