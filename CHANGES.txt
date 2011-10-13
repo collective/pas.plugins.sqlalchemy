@@ -1,7 +1,7 @@
 Changelog
 =========
 
-0.3 (unreleased)
+0.3 (2011-10-13)
 ----------------
 
 - Fire `IPropertiesUpdated` (from PAS) event on `setPropertiesForUser`
