@@ -32,6 +32,7 @@ from Products.PluggableAuthService.interfaces.plugins import (
     IRoleAssignerPlugin,
     IGroupEnumerationPlugin
     )
+from Products.PluggableAuthService.events import CredentialsUpdated
 
 # PlonePAS
 from Products.PlonePAS.interfaces.plugins import IUserManagement
@@ -362,7 +363,7 @@ class Plugin(BasePlugin, Cacheable):
 
         session.delete(user)
 
-   #
+    #
     # Allow users to change their own login name and password.
     #
     security.declareProtected(SetOwnPassword, 'getOwnUserInfo')
