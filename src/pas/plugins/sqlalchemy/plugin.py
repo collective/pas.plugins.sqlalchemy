@@ -120,6 +120,9 @@ class DictAwareUserPropertySheet(UserPropertySheet):
     def __getitem__(self, key):
         return self.getProperty(key)
 
+    def __iter__(self):
+        return self.propertyIds()
+
     def get(self, key, default):
         return self.getProperty(key, default)
 
