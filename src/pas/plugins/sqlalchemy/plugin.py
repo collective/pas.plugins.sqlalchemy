@@ -18,6 +18,8 @@ from Products.PluggableAuthService.permissions import ManageUsers, ManageGroups
 from Products.PluggableAuthService.permissions import SetOwnPassword
 from Products.PluggableAuthService.utils import createViewName
 from Products.PluggableAuthService.events import PropertiesUpdated
+from Products.PluggableAuthService.UserPropertySheet import UserPropertySheet
+
 from OFS.Cache import Cacheable
 from DateTime import DateTime
 
@@ -42,7 +44,6 @@ from Products.PlonePAS.interfaces.capabilities import IGroupCapability
 from Products.PlonePAS.interfaces.plugins import IMutablePropertiesPlugin
 from Products.PlonePAS.interfaces.group import IGroupIntrospection
 from Products.PlonePAS.interfaces.group import IGroupManagement
-from Products.PlonePAS.sheet import MutablePropertySheet
 from Products.PlonePAS.plugins.group import PloneGroup
 
 from pas.plugins.sqlalchemy import model
@@ -113,6 +114,14 @@ def graceful_recovery(default=None, log_args=True):
             return value
         return wrapper
     return decorator
+
+
+class DictAwareUserPropertySheet(UserPropertySheet):
+    def __getitem__(self, key):
+        return self.getProperty(key)
+
+    def get(self, key, default):
+        return self.getProperty(key, default)
 
 
 class Plugin(BasePlugin, Cacheable):
@@ -253,6 +262,7 @@ class Plugin(BasePlugin, Cacheable):
     def _enumerate(self, cls, exact_match, sort_by, max_results, criteria):
         """Helper method for enumerateUsers and enumerateGroups.
         """
+
         if exact_match and not ("login" in criteria or "id" in criteria):
             return ()
 
@@ -561,13 +571,10 @@ class Plugin(BasePlugin, Cacheable):
 
         view_name = createViewName('getPropertiesForUser', user.getId())
         cached_info = self.ZCacheable_get(view_name=view_name)
-        schema = self._getSchema(isGroup)
+        schema = self._getSchema(isGroup) or None
         if cached_info is not None:
-            if schema:
-                return MutablePropertySheet(self.id,
-                             schema=schema, **cached_info)
-            else:
-                return MutablePropertySheet(self.id, **cached_info)
+            return DictAwareUserPropertySheet(self.id, schema=schema, **cached_info)
+
         session = Session()
         query = session.query(self.principal_class).filter_by(
             zope_id=user.getId()
@@ -576,7 +583,7 @@ class Plugin(BasePlugin, Cacheable):
         principal = query.first()
         if principal is None:
             # XXX: Should we cache a negative result?
-            return {}
+            return DictAwareUserPropertySheet(self.id, schema=schema)
 
         data = {}
         for (zope_attr, sql_attr) in principal._properties:
@@ -590,12 +597,7 @@ class Plugin(BasePlugin, Cacheable):
         if data:
             self.ZCacheable_set(data, view_name=view_name)
             data.pop('id', None)
-            if schema:
-                sheet = MutablePropertySheet(self.id,
-                            schema=schema, **data)
-            else:
-                sheet = MutablePropertySheet(self.id, **data)
-            return sheet
+            return DictAwareUserPropertySheet(self.id, schema=schema, **data)
 
     security.declarePrivate('doSetProperty')
     def doSetProperty(self, principal, name, value):

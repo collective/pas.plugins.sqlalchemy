@@ -1,6 +1,21 @@
 Changelog
 =========
 
+In next release ...
+
+- Wrap user properties in a dict-aware user property
+  sheet. Previously, a mutable property sheet was returned, but this
+  is incorrect since changes aren't persisted.
+
+  While the PAS interface specifies that a dict should be returned for
+  an immutable result, we opt for a hybrid: a dict-aware user property
+  sheet which does not promise mutability. The motivation is that the
+  pluggable authentication service only supports a select list of
+  property value types and not, for instance, Python's own date and
+  time classes. By returning a property sheet, we can provide a schema
+  explicitly and not force the authentication service to "guess"
+  (infer) it.
+
 0.3 (2011-10-13)
 ----------------
 
