@@ -149,10 +149,12 @@ class MutablePropertySheet(UserPropertySheet):
         return True
 
     def setProperty(self, object, id, value):
+        self._properties[id] = value
         self._plugin.doSetProperty(object, id, value)
 
     def setProperties(self, object, mapping):
-        self._plugin.setPropertiesForUser(object, mapping)
+        self._properties.update(mapping)
+        self._plugin.setPropertiesForUser(object, self)
 
 
 class Plugin(BasePlugin, Cacheable):
@@ -660,6 +662,7 @@ class Plugin(BasePlugin, Cacheable):
         username = user.getId()
         principal = self._get_principal_by_id(username)
         properties = propertysheet.propertyItems()
+
         for name, value in properties:
             self.doSetProperty(principal, name, value)
 
