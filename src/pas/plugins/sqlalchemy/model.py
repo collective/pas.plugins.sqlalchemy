@@ -60,7 +60,7 @@ class Principal(Base):
     _properties = [("id", "zope_id")]
 
     def getId(self):
-        return self.id
+        return self.zope_id
 
 
 class RoleAssignment(Base):
