@@ -3,9 +3,15 @@ Changelog
 
 In next release ...
 
-- Wrap user properties in a dict-aware user property
-  sheet. Previously, a mutable property sheet was returned, but this
-  is incorrect since changes aren't persisted.
+- Fixed methods ``doSetProperty`` and ``setPropertiesForUser`` such
+  that they accept a generic principal and not necessarily an instance
+  of the plugin's principal class.
+  [malthe]
+
+- Wrap user properties in an actually mutable user property sheet
+  (which writes changes back to the plugin). Previously, a mutable
+  property sheet was returned, but this is incorrect since changes
+  aren't persisted.
 
   While the PAS interface specifies that a dict should be returned for
   an immutable result, we opt for a hybrid: a dict-aware user property
@@ -15,6 +21,7 @@ In next release ...
   time classes. By returning a property sheet, we can provide a schema
   explicitly and not force the authentication service to "guess"
   (infer) it.
+  [malthe]
 
 0.3 (2011-10-13)
 ----------------

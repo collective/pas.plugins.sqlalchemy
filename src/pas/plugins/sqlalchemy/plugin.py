@@ -6,6 +6,9 @@ import traceback
 
 from zope.dottedname.resolve import resolve
 from zope.event import notify
+from zope.interface import implements
+from zope.component.interfaces import ComponentLookupError
+
 from Acquisition import aq_get
 from AccessControl import ClassSecurityInfo
 from AccessControl.SecurityManagement import getSecurityManager
@@ -22,7 +25,6 @@ from Products.PluggableAuthService.UserPropertySheet import UserPropertySheet
 
 from OFS.Cache import Cacheable
 from DateTime import DateTime
-from zope.component.interfaces import ComponentLookupError
 
 # Pluggable Auth Service
 from Products.PluggableAuthService.interfaces.plugins import (
@@ -46,6 +48,7 @@ from Products.PlonePAS.interfaces.plugins import IMutablePropertiesPlugin
 from Products.PlonePAS.interfaces.group import IGroupIntrospection
 from Products.PlonePAS.interfaces.group import IGroupManagement
 from Products.PlonePAS.plugins.group import PloneGroup
+from Products.PlonePAS.interfaces.propertysheets import IMutablePropertySheet
 
 from pas.plugins.sqlalchemy import model
 from z3c.saconfig import named_scoped_session
@@ -124,7 +127,15 @@ def graceful_recovery(default=None, log_args=True):
     return decorator
 
 
-class DictAwareUserPropertySheet(UserPropertySheet):
+class MutablePropertySheet(UserPropertySheet):
+    """Mutable property sheet that persists changes back via plugin."""
+
+    implements(IMutablePropertySheet)
+
+    def __init__(self, plugin, **kwargs):
+        UserPropertySheet.__init__(self, plugin.id, **kwargs)
+        self._plugin = plugin
+
     def __getitem__(self, key):
         return self.getProperty(key)
 
@@ -133,6 +144,15 @@ class DictAwareUserPropertySheet(UserPropertySheet):
 
     def get(self, key, default):
         return self.getProperty(key, default)
+
+    def canWriteProperty(self, object, id):
+        return True
+
+    def setProperty(self, object, id, value):
+        self._plugin.doSetProperty(object, id, value)
+
+    def setProperties(self, object, mapping):
+        self._plugin.setPropertiesForUser(object, mapping)
 
 
 class Plugin(BasePlugin, Cacheable):
@@ -383,7 +403,7 @@ class Plugin(BasePlugin, Cacheable):
 
         session.delete(user)
 
-    #
+   #
     # Allow users to change their own login name and password.
     #
     security.declareProtected(SetOwnPassword, 'getOwnUserInfo')
@@ -584,7 +604,9 @@ class Plugin(BasePlugin, Cacheable):
         cached_info = self.ZCacheable_get(view_name=view_name)
         schema = self._getSchema(isGroup) or None
         if cached_info is not None:
-            return DictAwareUserPropertySheet(self.id, schema=schema, **cached_info)
+            return MutablePropertySheet(
+                self, schema=schema, **cached_info
+                )
 
         session = Session()
         query = session.query(self.principal_class).filter_by(
@@ -594,7 +616,7 @@ class Plugin(BasePlugin, Cacheable):
         principal = query.first()
         if principal is None:
             # XXX: Should we cache a negative result?
-            return DictAwareUserPropertySheet(self.id, schema=schema)
+            return MutablePropertySheet(self, schema=schema)
 
         data = {}
         for (zope_attr, sql_attr) in principal._properties:
@@ -608,10 +630,12 @@ class Plugin(BasePlugin, Cacheable):
         if data:
             self.ZCacheable_set(data, view_name=view_name)
             data.pop('id', None)
-            return DictAwareUserPropertySheet(self.id, schema=schema, **data)
+            return MutablePropertySheet(self, schema=schema, **data)
 
     security.declarePrivate('doSetProperty')
     def doSetProperty(self, principal, name, value):
+        username = principal.getId()
+        principal = self._get_principal_by_id(username)
         propmap = dict([reversed(r) for r in principal._properties])
         sql_attr = propmap.get(name, None)
         if sql_attr is None:
@@ -633,10 +657,8 @@ class Plugin(BasePlugin, Cacheable):
     security.declarePrivate('setPropertiesForUser')
     @graceful_recovery()
     def setPropertiesForUser(self, user, propertysheet):
-        session = Session()
-        principal = session.query(self.principal_class).\
-                filter_by(zope_id=user.getId()).first()
-
+        username = user.getId()
+        principal = self._get_principal_by_id(username)
         properties = propertysheet.propertyItems()
         for name, value in properties:
             self.doSetProperty(principal, name, value)
