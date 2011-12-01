@@ -59,6 +59,9 @@ class Principal(Base):
     __mapper_args__ = {'polymorphic_on': type}
     _properties = [("id", "zope_id")]
 
+    def getId(self):
+        return self.id
+
 
 class RoleAssignment(Base):
     __tablename__ = "role_assignments"
