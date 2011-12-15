@@ -1,7 +1,8 @@
 Changelog
 =========
 
-In next release ...
+0.3.1 (unreleased)
+------------------
 
 - Fixed methods ``doSetProperty`` and ``setPropertiesForUser`` such
   that they accept a generic principal and not necessarily an instance
