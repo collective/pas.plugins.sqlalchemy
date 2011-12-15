@@ -42,5 +42,10 @@ setup(name='pas.plugins.sqlalchemy',
       install_requires=requires,
       tests_require=tests_requires,
       test_suite="pas.plugins.sqlalchemy",
+      entry_points="""
+      # -*- entry_points -*-
+      [z3c.autoinclude.plugin]
+      target = plone
+      """
       )
 
