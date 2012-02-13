@@ -99,12 +99,12 @@ class User(Principal):
     roles = association_proxy("_roles", "name")
 
     # memberdata property sheet
-    email = Column(String(40), default=u"", index=True)
+    email = Column(String(80), default=u"", index=True)
     portal_skin = Column(String(20), default=u"")
     listed = Column(Integer, default=1)
     login_time = Column(DateTime(), default=functions.now())
     last_login_time = Column(DateTime(), default=functions.now())
-    fullname = Column(String(40), default=u"", index=True)
+    fullname = Column(String(80), default=u"", index=True)
     error_log_update = Column(Float, default=0)
     home_page = Column(String(40), default=u"")
     location = Column(String(40), default=u"")
