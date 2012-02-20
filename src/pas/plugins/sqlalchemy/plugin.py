@@ -638,6 +638,9 @@ class Plugin(BasePlugin, Cacheable):
     def doSetProperty(self, principal, name, value):
         username = principal.getId()
         principal = self._get_principal_by_id(username)
+        if not principal:
+            return
+
         propmap = dict([reversed(r) for r in principal._properties])
         sql_attr = propmap.get(name, None)
         if sql_attr is None:
