@@ -405,7 +405,7 @@ class Plugin(BasePlugin, Cacheable):
 
         session.delete(user)
 
-   #
+    #
     # Allow users to change their own login name and password.
     #
     security.declareProtected(SetOwnPassword, 'getOwnUserInfo')
@@ -618,7 +618,9 @@ class Plugin(BasePlugin, Cacheable):
         principal = query.first()
         if principal is None:
             # XXX: Should we cache a negative result?
-            return MutablePropertySheet(self, schema=schema)
+            # return MutablePropertySheet(self, schema=schema)
+            # return none if user not exists
+            return None
 
         data = {}
         for (zope_attr, sql_attr) in principal._properties:
