@@ -239,23 +239,21 @@ class Plugin(BasePlugin, Cacheable):
     def doChangeUser(self, principal_id, password, **kw):
         # userSetPassword in PlonePAS expects a RuntimeError when a
         # plugin doesn't hold the user.
-        session = Session()
-        query = session.query(self.user_class).filter_by(zope_id=principal_id)
-        user = query.first()
-        if user is None:
+        principal = self._get_principal_by_id(principal_id)
+        if principal is None:
             raise RuntimeError(
                 "User does not exist: zope_id=%s" % principal_id
                 )
-        user.set_password(password)
+        principal.set_password(password)
 
     security.declarePrivate('doDeleteUser')
     @graceful_recovery()
-    def doDeleteUser(self, login):
+    def doDeleteUser(self, principal_id):
         session = Session()
-        user = session.query(self.user_class).filter_by(login=login).first()
-        if user is None:
+        principal = self._get_principal_by_id(principal_id)
+        if principal is None:
             return False
-        session.delete(user)
+        session.delete(principal)
         return True
 
     #
@@ -263,10 +261,9 @@ class Plugin(BasePlugin, Cacheable):
     #
     security.declarePublic('allowPasswordSet')
     @graceful_recovery(False)
-    def allowPasswordSet(self, userid):
-        session = Session()
-        user = session.query(self.user_class).filter_by(zope_id=userid).first()
-        if user is not None:
+    def allowPasswordSet(self, principal_id):
+        principal = self._get_principal_by_id(principal_id)
+        if principal is not None:
             return True
         return False
 
