@@ -4,6 +4,14 @@ Changelog
 0.3.1 (unreleased)
 ------------------
 
+- using '__mapper__' instead of '__table__' to check Column type.
+  It allows to customize user model in another class with
+  polymorphic_identity [gborelli]
+
+- fixed getPropertiesForUser, return None if principal doesn't exist [gborelli]
+
+- check if principal exists before updating its properties [gborelli]
+
 - Fixed methods ``doSetProperty`` and ``setPropertiesForUser`` such
   that they accept a generic principal and not necessarily an instance
   of the plugin's principal class.

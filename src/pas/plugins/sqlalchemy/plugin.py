@@ -656,7 +656,7 @@ class Plugin(BasePlugin, Cacheable):
         # application)
         if isinstance(value, basestring):
             value = safedecode(value)
-            cspec = getattr(principal.__table__.columns, sql_attr).type
+            cspec = getattr(principal.__mapper__.columns, sql_attr).type
             if isinstance(cspec, rdb.String):
                 value = value[:cspec.length]
         setattr(principal, sql_attr, value)
