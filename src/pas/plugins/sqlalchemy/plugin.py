@@ -234,7 +234,7 @@ class Plugin(BasePlugin, Cacheable):
     # IUserManagement implementation
     #
 
-	security.declarePrivate('updateUser')
+    security.declarePrivate('updateUser')
     @graceful_recovery()
     def updateUser(self, user_id, login_name):
         session = Session()
