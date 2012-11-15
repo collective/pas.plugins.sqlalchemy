@@ -52,17 +52,38 @@ from Products.PlonePAS.interfaces.propertysheets import IMutablePropertySheet
 
 from pas.plugins.sqlalchemy import model
 from z3c.saconfig import named_scoped_session
+import z3c
 
 
 import caching_query
+from caching_query import FromCache
 from beaker import cache
+import time
+
 
 # Beaker CacheManager.  A home base for cache configurations.
 cache_manager = cache.CacheManager()
 
 z3c.saconfig.utility.SESSION_DEFAULTS['query_cls'] = caching_query.query_callable(cache_manager)
 Session = named_scoped_session("pas.plugins.sqlalchemy")
-import pdb; pdb.set_trace()
+# configure the "default" cache region.
+cache_manager.regions['default'] = {
+
+        # using type 'file' to illustrate
+        # serialized persistence.  In reality,
+        # use memcached.   Other backends
+        # are much, much slower.
+        'type':'file',
+        'data_dir':"/Users/TomB/tmp/",
+        'expire':3600,
+
+        # set start_time to current time
+        # to re-cache everything
+        # upon application startup
+        'start_time':time.time()
+    }
+
+#import pdb; pdb.set_trace()
 logger = logging.getLogger("pas.plugins.sqlalchemy")
 
 manage_addSqlalchemyPlugin = PageTemplateFile("templates/addPlugin",
@@ -168,7 +189,6 @@ class MutablePropertySheet(UserPropertySheet):
 class Plugin(BasePlugin, Cacheable):
     meta_type = 'SQLAlchemy user/group/prop manager'
     security = ClassSecurityInfo()
-
     _properties = BasePlugin._properties + (
             {'id'    : 'user_model',
              'label' : 'SQLAlchemy User model (dotted path)',
@@ -606,17 +626,19 @@ class Plugin(BasePlugin, Cacheable):
         Returns a dictionary of values or a PropertySheet.
         """
         isGroup = getattr(user, 'isGroup', lambda: None)()
-
+        print "\ngetting mutable properties for: %s\n" % user.getId()
         view_name = createViewName('getPropertiesForUser', user.getId())
         cached_info = self.ZCacheable_get(view_name=view_name)
         schema = self._getSchema(isGroup) or None
         if cached_info is not None:
+            print "\nGot stuff from ZCache\n"
             return MutablePropertySheet(
                 self, schema=schema, **cached_info
                 )
 
         session = Session()
-        query = session.query(self.principal_class).filter_by(
+        #import pdb; pdb.set_trace()
+        query = session.query(self.principal_class).options(FromCache("default", "mutable_properties")).filter_by(
             zope_id=user.getId()
             )
 
