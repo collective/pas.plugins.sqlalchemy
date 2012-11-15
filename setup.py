@@ -14,6 +14,7 @@ requires = [
     'z3c.saconfig',
     'zope.sqlalchemy',
     'DateTime>=2.11',
+    'beaker',
     ]
 
 tests_requires = requires + ['pysqlite']

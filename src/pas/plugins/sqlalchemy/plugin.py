@@ -53,8 +53,16 @@ from Products.PlonePAS.interfaces.propertysheets import IMutablePropertySheet
 from pas.plugins.sqlalchemy import model
 from z3c.saconfig import named_scoped_session
 
-Session = named_scoped_session("pas.plugins.sqlalchemy")
 
+import caching_query
+from beaker import cache
+
+# Beaker CacheManager.  A home base for cache configurations.
+cache_manager = cache.CacheManager()
+
+z3c.saconfig.utility.SESSION_DEFAULTS['query_cls'] = caching_query.query_callable(cache_manager)
+Session = named_scoped_session("pas.plugins.sqlalchemy")
+import pdb; pdb.set_trace()
 logger = logging.getLogger("pas.plugins.sqlalchemy")
 
 manage_addSqlalchemyPlugin = PageTemplateFile("templates/addPlugin",
