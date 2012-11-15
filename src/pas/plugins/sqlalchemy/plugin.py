@@ -75,8 +75,12 @@ z3c.saconfig.utility.SESSION_DEFAULTS['query_cls'] = caching_query.query_callabl
 named_scope_func_globals = named_scoped_session.func_globals
 new_factory = patchadams(caching_query.query_callable(cache_manager), named_scope_func_globals['session_factory'])
 named_scope_func_globals['session_factory'] = new_factory
-
+userdict = None
 Session = named_scoped_session("pas.plugins.sqlalchemy")
+
+
+gotproperties = {}
+countproperties = 0
 
 def _getCacheKeyFromClass(cls):
     return cls.__module__ + "." + cls.__name__
@@ -335,6 +339,28 @@ class Plugin(BasePlugin, Cacheable):
 
         if exact_match and not ("login" in criteria or "id" in criteria):
             return ()
+        
+        if exact_match and "id" in criteria:
+            try:
+                global userdict 
+                if not userdict:
+                    print "Creating userdict"
+                    userdict = dict([(x.login, x) for x in query.all()])
+                principal = userdict[criteria['id']]
+            except KeyError:
+                # The user doesn't exist in the sql users
+                return {}
+            
+            all = {}
+            user_id = principal.zope_id
+            data = dict(id=safeencode(user_id),
+                        pluginid=self.getId())
+            data["login"] = principal.login
+            all[user_id] = data.setdefault(user_id, data)
+            values = tuple(all.values())
+            return values
+            
+
 
         view_name = createViewName(
             'enumerate%s' % cls.__name__,
@@ -362,9 +388,10 @@ class Plugin(BasePlugin, Cacheable):
             return (column == v)
 
         session = Session()
-        query = session.query(cls)
-
+        query = session.query(cls).options(FromCache("default", _getCacheKeyFromClass(cls)))
+        
         propmap = dict(cls._properties)
+        #import pdb; pdb.set_trace()
         for (term, value) in criteria.items():
             column = getattr(cls, propmap[term])
             if not (isinstance(value, list) or isinstance(value, tuple)):
@@ -379,7 +406,7 @@ class Plugin(BasePlugin, Cacheable):
             query = query.limit(max_results)
 
         all = {}
-        for user in query:
+        for user in query.all():
             user_id = user.zope_id
             data = dict(id=safeencode(user_id),
                         pluginid=self.getId())
@@ -647,15 +674,41 @@ class Plugin(BasePlugin, Cacheable):
                 )
 
         session = Session()
-        query = session.query(self.principal_class).options(FromCache("default", _getCacheKeyFromClass(self.principal_class))).filter_by(
-            zope_id=user.getId()
-            )
+        query = session.query(self.principal_class).options(FromCache("default", _getCacheKeyFromClass(self.principal_class)))
         
         # Allow invalidation of property sheet cache via request parameters
         if request and request.get("invalidate_sql_cache", False):
+            userdict = None
             query.invalidate()   
         
-        principal = query.first()
+        # It's likely that this query will be called frequently rather than occasionally.
+        # Since we're already caching, let's get all of them first, then all the users will
+        # be in the cache ready for further queries
+        query.all()
+        #import pdb; pdb.set_trace()
+        global gotproperties
+        global countproperties
+        if user.getId() in gotproperties:
+            print "Getting them again"
+        else:
+            gotproperties[user.getId()] = 1
+            countproperties += 1
+            print "getting properties for %s - %d" % (user.getId(), countproperties)
+        
+        try:
+            global userdict 
+            if not userdict:
+                print "Creating userdict"
+                userdict = dict([(x.login, x) for x in query.all()])
+            principal = userdict[user.getId()]
+        except KeyError:
+            # The user doesn't exist in the sql users
+            principal = None
+        
+        """principal = session.query(self.principal_class).options(FromCache("default", _getCacheKeyFromClass(self.principal_class))).filter_by(
+            zope_id=user.getId()
+            ).first()
+        """
         if principal is None:
             # XXX: Should we cache a negative result?
             # return MutablePropertySheet(self, schema=schema)
