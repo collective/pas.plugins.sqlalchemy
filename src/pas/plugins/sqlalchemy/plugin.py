@@ -88,8 +88,6 @@ cache_manager.regions['default'] = {
         # serialized persistence.  In reality,
         # use memcached.   Other backends
         # are much, much slower.
-        'type':'file',
-        'data_dir':tempfile.mkdtemp(),
         'expire':3600,
 
         # set start_time to current time
