@@ -81,7 +81,6 @@ class CachingQuery(Query):
         createfunc specified.
 
         """
-        print "\nget_value\n"
         cache, cache_key = _get_cache_parameters(self)
         ret = cache.get_value(cache_key, createfunc=createfunc)
         if merge:
@@ -171,11 +170,9 @@ class FromCache(MapperOption):
         self.region = region
         self.namespace = namespace
         self.cache_key = cache_key
-        print "\nHi, initialising cache?\n"
     
     def process_query(self, query):
         """Process a Query during normal loading operation."""
-        print "\nprocess_query\n"
         _set_cache_parameters(query, self.region, self.namespace, self.cache_key)
 
 class RelationshipCache(MapperOption):

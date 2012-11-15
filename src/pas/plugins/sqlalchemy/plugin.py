@@ -59,13 +59,28 @@ import caching_query
 from caching_query import FromCache
 from beaker import cache
 import time
-
+import tempfile
 
 # Beaker CacheManager.  A home base for cache configurations.
 cache_manager = cache.CacheManager()
 
+def patchadams(cls, old_factory):
+    def session_factory(*args, **kwargs):
+        session = old_factory(*args, **kwargs)
+        session._query_cls = cls
+        return session
+    return session_factory
+
 z3c.saconfig.utility.SESSION_DEFAULTS['query_cls'] = caching_query.query_callable(cache_manager)
+named_scope_func_globals = named_scoped_session.func_globals
+new_factory = patchadams(caching_query.query_callable(cache_manager), named_scope_func_globals['session_factory'])
+named_scope_func_globals['session_factory'] = new_factory
+
 Session = named_scoped_session("pas.plugins.sqlalchemy")
+
+def _getCacheKeyFromClass(cls):
+    return cls.__module__ + "." + cls.__name__
+
 # configure the "default" cache region.
 cache_manager.regions['default'] = {
 
@@ -74,7 +89,7 @@ cache_manager.regions['default'] = {
         # use memcached.   Other backends
         # are much, much slower.
         'type':'file',
-        'data_dir':"/Users/TomB/tmp/",
+        'data_dir':tempfile.mkdtemp(),
         'expire':3600,
 
         # set start_time to current time
@@ -83,7 +98,6 @@ cache_manager.regions['default'] = {
         'start_time':time.time()
     }
 
-#import pdb; pdb.set_trace()
 logger = logging.getLogger("pas.plugins.sqlalchemy")
 
 manage_addSqlalchemyPlugin = PageTemplateFile("templates/addPlugin",
@@ -309,7 +323,7 @@ class Plugin(BasePlugin, Cacheable):
             return None
 
         session = Session()
-        user = session.query(self.user_class).filter_by(login=login).first()
+        user = session.query(self.user_class).options(FromCache("default", _getCacheKeyFromClass(self.user_class))).filter_by(login=login).first()
 
         if user is not None and user.check_password(password):
             return (user.zope_id, user.login)
@@ -423,7 +437,7 @@ class Plugin(BasePlugin, Cacheable):
     @graceful_recovery()
     def removeUser(self, user_id):  # raises keyerror
         session = Session()
-        query = session.query(self.user_class).filter_by(zope_id=user_id)
+        query = session.query(self.user_class).options(FromCache("default", _getCacheKeyFromClass(self.user_class))).filter_by(zope_id=user_id)
         user = query.first()
         if user is None:
             raise KeyError(user_id)
@@ -626,22 +640,18 @@ class Plugin(BasePlugin, Cacheable):
         Returns a dictionary of values or a PropertySheet.
         """
         isGroup = getattr(user, 'isGroup', lambda: None)()
-        print "\ngetting mutable properties for: %s\n" % user.getId()
         view_name = createViewName('getPropertiesForUser', user.getId())
         cached_info = self.ZCacheable_get(view_name=view_name)
         schema = self._getSchema(isGroup) or None
         if cached_info is not None:
-            print "\nGot stuff from ZCache\n"
             return MutablePropertySheet(
                 self, schema=schema, **cached_info
                 )
 
         session = Session()
-        #import pdb; pdb.set_trace()
-        query = session.query(self.principal_class).options(FromCache("default", "mutable_properties")).filter_by(
+        query = session.query(self.principal_class).options(FromCache("default", _getCacheKeyFromClass(self.principal_class))).filter_by(
             zope_id=user.getId()
             )
-
         principal = query.first()
         if principal is None:
             # XXX: Should we cache a negative result?
@@ -734,7 +744,7 @@ class Plugin(BasePlugin, Cacheable):
             principal_id = principal.getId()
 
         session = Session()
-        principal = session.query(self.principal_class)\
+        principal = session.query(self.principal_class).options(FromCache("default", _getCacheKeyFromClass(self.principal_class)))\
                 .filter_by(zope_id=principal_id).first()
         if principal is None:
             return ()
@@ -836,7 +846,7 @@ class Plugin(BasePlugin, Cacheable):
         if group is None:
             return False
 
-        principal = session.query(self.principal_class)\
+        principal = session.query(self.principal_class).options(FromCache("default", _getCacheKeyFromClass(self.principal_class)))\
                 .filter_by(zope_id=principal_id).first()
 
         if principal is None:
@@ -873,7 +883,7 @@ class Plugin(BasePlugin, Cacheable):
 
         group = session.query(self.group_class)\
                 .filter_by(zope_id=group_id).first()
-        user = session.query(self.principal_class)\
+        user = session.query(self.principal_class).options(FromCache("default", _getCacheKeyFromClass(self.principal_class)))\
                 .filter_by(zope_id=principal_id).first()
 
         if group is None or user is None:
@@ -885,7 +895,7 @@ class Plugin(BasePlugin, Cacheable):
     security.declarePrivate( 'updateGroup' )
     def updateGroup(self, group_id, title=None, description=None):
         session = Session()
-        principal = session.query(self.principal_class).\
+        principal = session.query(self.principal_class).options(FromCache("default", _getCacheKeyFromClass(self.principal_class))).\
                 filter_by(zope_id=group_id).first()
         if title:
             self.doSetProperty(principal, 'title', title)
@@ -1044,7 +1054,7 @@ class Plugin(BasePlugin, Cacheable):
 
     def _get_principal_by_id(self, principal_id):
         session = Session()
-        query = session.query(self.principal_class).filter_by(
+        query = session.query(self.principal_class).options(FromCache("default", _getCacheKeyFromClass(self.principal_class))).filter_by(
             zope_id=principal_id
             )
         return query.first()
