@@ -650,6 +650,11 @@ class Plugin(BasePlugin, Cacheable):
         query = session.query(self.principal_class).options(FromCache("default", _getCacheKeyFromClass(self.principal_class))).filter_by(
             zope_id=user.getId()
             )
+        
+        # Allow invalidation of property sheet cache via request parameters
+        if request.get("invalidate_sql_cache", False):
+            query.invalidate()   
+        
         principal = query.first()
         if principal is None:
             # XXX: Should we cache a negative result?
@@ -893,8 +898,11 @@ class Plugin(BasePlugin, Cacheable):
     security.declarePrivate( 'updateGroup' )
     def updateGroup(self, group_id, title=None, description=None):
         session = Session()
-        principal = session.query(self.principal_class).options(FromCache("default", _getCacheKeyFromClass(self.principal_class))).\
-                filter_by(zope_id=group_id).first()
+        query = session.query(self.principal_class).options(FromCache("default", _getCacheKeyFromClass(self.principal_class))).\
+                filter_by(zope_id=group_id)
+        # Invalidate this query cache
+        query.invalidate()
+        principal = query.first()
         if title:
             self.doSetProperty(principal, 'title', title)
         if description:
