@@ -321,7 +321,7 @@ class Plugin(BasePlugin, Cacheable):
             return None
 
         session = Session()
-        user = session.query(self.user_class).options(FromCache("default", _getCacheKeyFromClass(self.user_class))).filter_by(login=login).first()
+        user = session.query(self.user_class).filter_by(login=login).first()
 
         if user is not None and user.check_password(password):
             return (user.zope_id, user.login)
