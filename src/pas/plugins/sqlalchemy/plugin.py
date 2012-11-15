@@ -652,7 +652,7 @@ class Plugin(BasePlugin, Cacheable):
             )
         
         # Allow invalidation of property sheet cache via request parameters
-        if request.get("invalidate_sql_cache", False):
+        if request and request.get("invalidate_sql_cache", False):
             query.invalidate()   
         
         principal = query.first()
