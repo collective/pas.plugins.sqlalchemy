@@ -344,7 +344,7 @@ class Plugin(BasePlugin, Cacheable):
             try:
                 global userdict 
                 if not userdict:
-                    print "Creating userdict"
+                    query = Session().query(self.principal_class).options(FromCache("default", _getCacheKeyFromClass(self.principal_class)))
                     userdict = dict([(x.login, x) for x in query.all()])
                 principal = userdict[criteria['id']]
             except KeyError:
@@ -391,7 +391,6 @@ class Plugin(BasePlugin, Cacheable):
         query = session.query(cls).options(FromCache("default", _getCacheKeyFromClass(cls)))
         
         propmap = dict(cls._properties)
-        #import pdb; pdb.set_trace()
         for (term, value) in criteria.items():
             column = getattr(cls, propmap[term])
             if not (isinstance(value, list) or isinstance(value, tuple)):
@@ -406,6 +405,8 @@ class Plugin(BasePlugin, Cacheable):
             query = query.limit(max_results)
 
         all = {}
+        
+        users = query.all()
         for user in query.all():
             user_id = user.zope_id
             data = dict(id=safeencode(user_id),
@@ -584,7 +585,6 @@ class Plugin(BasePlugin, Cacheable):
 
         roles = set([])
         principal_ids = set([])
-
         if isinstance(principal, basestring):
             # This is an extension to the official PAS plugin for internal use.
             principal_id = principal
@@ -674,6 +674,7 @@ class Plugin(BasePlugin, Cacheable):
                 )
 
         session = Session()
+        
         query = session.query(self.principal_class).options(FromCache("default", _getCacheKeyFromClass(self.principal_class)))
         
         # Allow invalidation of property sheet cache via request parameters
@@ -685,20 +686,11 @@ class Plugin(BasePlugin, Cacheable):
         # Since we're already caching, let's get all of them first, then all the users will
         # be in the cache ready for further queries
         query.all()
-        #import pdb; pdb.set_trace()
         global gotproperties
-        global countproperties
-        if user.getId() in gotproperties:
-            print "Getting them again"
-        else:
-            gotproperties[user.getId()] = 1
-            countproperties += 1
-            print "getting properties for %s - %d" % (user.getId(), countproperties)
         
         try:
             global userdict 
             if not userdict:
-                print "Creating userdict"
                 userdict = dict([(x.login, x) for x in query.all()])
             principal = userdict[user.getId()]
         except KeyError:
@@ -936,7 +928,6 @@ class Plugin(BasePlugin, Cacheable):
         """
 
         session = Session()
-
         group = session.query(self.group_class)\
                 .filter_by(zope_id=group_id).first()
         user = session.query(self.principal_class).options(FromCache("default", _getCacheKeyFromClass(self.principal_class)))\
