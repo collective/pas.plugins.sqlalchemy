@@ -55,7 +55,6 @@ class CachingQuery(Query):
     """
     
     def __init__(self, manager, *args, **kw):
-        #import pdb; pdb.set_trace()
         self.cache_manager = manager
         Query.__init__(self, *args, **kw)
         
