@@ -150,6 +150,7 @@ class User(Principal):
         return sha(password+self.salt).hexdigest()
 
     def set_password(self, password):
+#        import pdb;pdb.set_trace()
         self._salt = self.generate_salt()
         self._password = self.encrypt(password)
 
