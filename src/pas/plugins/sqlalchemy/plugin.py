@@ -26,7 +26,7 @@ from Products.PluggableAuthService.UserPropertySheet import UserPropertySheet
 from OFS.Cache import Cacheable
 from DateTime import DateTime
 
-#by phil:
+#Use plone.memoize for caching:
 from plone.memoize import ram
 from time import time
 
