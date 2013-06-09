@@ -26,10 +26,6 @@ from Products.PluggableAuthService.UserPropertySheet import UserPropertySheet
 from OFS.Cache import Cacheable
 from DateTime import DateTime
 
-#Use plone.memoize for caching:
-from plone.memoize import ram
-from time import time
-
 # Pluggable Auth Service
 from Products.PluggableAuthService.interfaces.plugins import (
     IUserAdderPlugin,
@@ -243,21 +239,23 @@ class Plugin(BasePlugin, Cacheable):
     def doChangeUser(self, principal_id, password, **kw):
         # userSetPassword in PlonePAS expects a RuntimeError when a
         # plugin doesn't hold the user.
-        principal = self._get_principal_by_id(principal_id)
-        if principal is None:
+        session = Session()
+        query = session.query(self.user_class).filter_by(zope_id=principal_id)
+        user = query.first()
+        if user is None:
             raise RuntimeError(
                 "User does not exist: zope_id=%s" % principal_id
                 )
-        principal.set_password(password)
+        user.set_password(password)
 
     security.declarePrivate('doDeleteUser')
     @graceful_recovery()
-    def doDeleteUser(self, principal_id):
+    def doDeleteUser(self, login):
         session = Session()
-        principal = self._get_principal_by_id(principal_id)
-        if principal is None:
+        user = session.query(self.user_class).filter_by(login=login).first()
+        if user is None:
             return False
-        session.delete(principal)
+        session.delete(user)
         return True
 
     #
@@ -265,10 +263,10 @@ class Plugin(BasePlugin, Cacheable):
     #
     security.declarePublic('allowPasswordSet')
     @graceful_recovery(False)
-    @ram.cache(lambda *args: time() // (120))
-    def allowPasswordSet(self, principal_id):
-        principal = self._get_principal_by_id(principal_id)
-        if principal is not None:
+    def allowPasswordSet(self, userid):
+        session = Session()
+        user = session.query(self.user_class).filter_by(zope_id=userid).first()
+        if user is not None:
             return True
         return False
 
@@ -278,9 +276,7 @@ class Plugin(BasePlugin, Cacheable):
 
     security.declarePrivate('authenticateCredentials')
     @graceful_recovery(log_args=False)
-    @ram.cache(lambda *args: time() // (120))
     def authenticateCredentials(self, credentials):
-        print 'authenticateCredentials:',credentials
         login = credentials.get('login')
         password = credentials.get('password')
 
@@ -296,7 +292,6 @@ class Plugin(BasePlugin, Cacheable):
     #
     # IUserEnumerationPlugin implementation
     #
-    @ram.cache(lambda *args: time() // (120))
     def _enumerate(self, cls, exact_match, sort_by, max_results, criteria):
         """Helper method for enumerateUsers and enumerateGroups.
         """
@@ -331,7 +326,6 @@ class Plugin(BasePlugin, Cacheable):
 
         session = Session()
         query = session.query(cls)
-        #print query.all()
 
         propmap = dict(cls._properties)
         for (term, value) in criteria.items():
@@ -515,7 +509,6 @@ class Plugin(BasePlugin, Cacheable):
 
     security.declarePrivate('getRolesForPrincipal')
     @graceful_recovery(())
-    @ram.cache(lambda *args: time() // (120))
     def getRolesForPrincipal(self, principal, request=None, ignore_groups=False):
 
         """ principal -> ( role_1, ... role_N )
@@ -524,7 +517,6 @@ class Plugin(BasePlugin, Cacheable):
 
         o May assign roles based on values in the REQUEST object, if present.
         """
-        print 'getRolesForPrincipal:', principal
 
         roles = set([])
         principal_ids = set([])
@@ -604,12 +596,10 @@ class Plugin(BasePlugin, Cacheable):
 
     security.declarePrivate('getPropertiesForUser')
     @graceful_recovery()
-    @ram.cache(lambda *args: time() // (120))
     def getPropertiesForUser(self, user, request=None):
         """Get property values for a user or group.
         Returns a dictionary of values or a PropertySheet.
         """
-        print 'getPropertiesForUser:', user
         isGroup = getattr(user, 'isGroup', lambda: None)()
 
         view_name = createViewName('getPropertiesForUser', user.getId())
@@ -702,7 +692,6 @@ class Plugin(BasePlugin, Cacheable):
 
     security.declarePrivate('getGroupsForPrincipal')
     @graceful_recovery(())
-    @ram.cache(lambda *args: time() // (120))
     def getGroupsForPrincipal(self, principal, request=None):
         """ principal -> ( group_1, ... group_N )
 
@@ -731,7 +720,6 @@ class Plugin(BasePlugin, Cacheable):
 
     security.declarePrivate('enumerateGroups')
     @graceful_recovery(())
-    @ram.cache(lambda *args: time() // (120))
     def enumerateGroups(self, id=None,
                         exact_match=False,
                         sort_by=None,
@@ -886,7 +874,6 @@ class Plugin(BasePlugin, Cacheable):
 
     security.declarePublic('allowDeletePrincipal')
     @graceful_recovery(False)
-    @ram.cache(lambda *args: time() // (120))
     def allowDeletePrincipal(self, principal_id):
         """True if this plugin can delete a certain principal."""
 
@@ -897,7 +884,6 @@ class Plugin(BasePlugin, Cacheable):
     #
 
     @graceful_recovery(False)
-    @ram.cache(lambda *args: time() // (120))
     def allowGroupAdd(self, user_id, group_id):
         """True if this plugin will allow adding a certain user to a
         certain group."""
@@ -914,7 +900,6 @@ class Plugin(BasePlugin, Cacheable):
         return True
 
     @graceful_recovery(False)
-    @ram.cache(lambda *args: time() // (120))
     def allowGroupRemove(self, user_id, group_id):
         """True if this plugin will allow removing a certain user from
         a certain group."""
@@ -936,7 +921,6 @@ class Plugin(BasePlugin, Cacheable):
     ###########################
 
     @graceful_recovery(None)
-    @ram.cache(lambda *args: time() // (120))
     def getGroupById(self, group_id):
         """
         Returns the portal_groupdata-ish object for a group
@@ -966,7 +950,6 @@ class Plugin(BasePlugin, Cacheable):
     #################################
 
     @graceful_recovery(())
-    @ram.cache(lambda *args: time() // (120))
     def getGroups(self):
         """
         Returns an iteration of the available groups
@@ -977,7 +960,6 @@ class Plugin(BasePlugin, Cacheable):
         return [PloneGroup(g.zope_id).__of__(self) for g in groups]
 
     @graceful_recovery(())
-    @ram.cache(lambda *args: time() // (120))
     def getGroupIds(self):
         """
         Returns a list of the available groups
@@ -988,7 +970,6 @@ class Plugin(BasePlugin, Cacheable):
         return [row[0] for row in query.all()]
 
     @graceful_recovery(())
-    @ram.cache(lambda *args: time() // (120))
     def getGroupMembers(self, group_id):
         """
         Return the members of the given group
@@ -1009,7 +990,6 @@ class Plugin(BasePlugin, Cacheable):
         # We do not manage roles.
         raise AttributeError
 
-    @ram.cache(lambda *args: time() // (120))
     def _get_groups_for_principal_from_pas(self, principal):
         plugins = self._getPAS()._getOb('plugins')
 
@@ -1018,7 +998,6 @@ class Plugin(BasePlugin, Cacheable):
             if groups:
                 yield groups
 
-    @ram.cache(lambda *args: time() // (120))
     def _get_properties_for_user_from_pas(self, principal):
         plugins = self._getPAS()._getOb('plugins')
         propfinders = plugins.listPlugins(IPropertiesPlugin)
@@ -1027,7 +1006,6 @@ class Plugin(BasePlugin, Cacheable):
             if data:
                 yield propfinder_id, data
 
-    @ram.cache(lambda *args: time() // (120))
     def _get_roles_for_principal_from_pas(self, principal):
         plugins = self._getPAS()._getOb('plugins')
         rolemakers = plugins.listPlugins(IRolesPlugin)
@@ -1037,9 +1015,7 @@ class Plugin(BasePlugin, Cacheable):
             if roles:
                 yield roles
 
-    @ram.cache(lambda *args: time() // (120))
     def _get_principal_by_id(self, principal_id):
-        print '_get_principal_by_id: ',principal_id
         session = Session()
         query = session.query(self.principal_class).filter_by(
             zope_id=principal_id

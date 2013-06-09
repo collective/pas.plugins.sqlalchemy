@@ -150,7 +150,6 @@ class User(Principal):
         return sha(password+self.salt).hexdigest()
 
     def set_password(self, password):
-#        import pdb;pdb.set_trace()
         self._salt = self.generate_salt()
         self._password = self.encrypt(password)
 
@@ -184,6 +183,6 @@ class Group(Principal):
                    ]
 
     def __repr__(self):
-        return ("<Group id=%s name=%s>" % (
+        return ("<Group id=%d name=%s>" % (
             str(self.id), self.zope_id)).encode('utf-8')
 
