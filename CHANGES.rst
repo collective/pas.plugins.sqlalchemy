@@ -4,6 +4,9 @@ Changelog
 0.4 (unreleased)
 ------------------
 
+- modernized: Pep8, Travis CI, ...
+  [jensens]
+
 - using _get_principal_by_id to get principal in doChangeUser,
   doDeleteUser, and allowPasswordSet methods
   [gborelli]
