@@ -17,36 +17,36 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program; if not, write to the Free Software
 #  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-
-import random
-import string
-import datetime
-
-try:
-    from hashlib import sha1 as sha
-except:
-    from sha import sha
-
-from zope.interface import implements
-
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.sql import functions
-from sqlalchemy import Table, Column, Integer, String, Boolean, \
-        DateTime
-from sqlalchemy import Text, Float, ForeignKey, Sequence
-from sqlalchemy.orm import relation
-from sqlalchemy.ext.associationproxy import association_proxy
-from sqlalchemy.ext.declarative import synonym_for
-
+from hashlib import sha1 as sha
 from pas.plugins.sqlalchemy.interfaces import IEncryptedPasswordAware
 from pas.plugins.sqlalchemy.interfaces import IUser
+from sqlalchemy import Boolean
+from sqlalchemy import Column
+from sqlalchemy import DateTime
+from sqlalchemy import Float
+from sqlalchemy import ForeignKey
+from sqlalchemy import Integer
+from sqlalchemy import Sequence
+from sqlalchemy import String
+from sqlalchemy import Table
+from sqlalchemy import Text
+from sqlalchemy.ext.associationproxy import association_proxy
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.ext.declarative import synonym_for
+from sqlalchemy.orm import relation
+from sqlalchemy.sql import functions
+from zope.interface import implements
+import random
+import string
 
 Base = declarative_base()
 
 group_member_table = Table('group_members', Base.metadata,
-    Column('group_id', Integer, ForeignKey('groups.id'), primary_key=True),
-    Column('principal_id', Integer, ForeignKey('principals.id'), primary_key=True),
-)
+                           Column('group_id', Integer, ForeignKey(
+                               'groups.id'), primary_key=True),
+                           Column('principal_id', Integer, ForeignKey(
+                               'principals.id'), primary_key=True),
+                           )
 
 
 class Principal(Base):
@@ -85,17 +85,21 @@ class User(Principal):
     __mapper_args__ = {'polymorphic_identity': 'user'}
 
     user_id = Column("id", Integer, ForeignKey(Principal.id),
-            primary_key=True)
+                     primary_key=True)
 
     login = Column(String(64), unique=True, index=True)
-    #name = Column(String, unique=True) # is replaced by zope_id on the parent class/table, common for groups and users.
+    # name = Column(String, unique=True) # is replaced by zope_id on the
+    # parent class/table, common for groups and users.
     _password = Column("password", String(64))
     _salt = Column("salt", String(12))
     enabled = Column(Boolean(), nullable=False, default=True, index=True)
 
     # roles
-    _roles =  relation(
-        RoleAssignment, collection_class=set, cascade="all, delete, delete-orphan")
+    _roles = relation(
+        RoleAssignment,
+        collection_class=set,
+        cascade="all, delete, delete-orphan"
+    )
     roles = association_proxy("_roles", "name")
 
     # memberdata property sheet
@@ -114,23 +118,23 @@ class User(Principal):
     wysiwyg_editor = Column(String(10), default="")
     visible_ids = Column(Integer, default=0)
 
-    _properties = [ ("id", "zope_id" ),
-                    ("login", "login" ),
-                    ("email", "email" ),
-                    ("portal_skin", "portal_skin" ),
-                    ("listed", "listed" ),
-                    ("login_time", "login_time" ),
-                    ("last_login_time", "last_login_time" ),
-                    ("fullname", "fullname" ),
-                    ("error_log_update", "error_log_update" ),
-                    ("home_page", "home_page" ),
-                    ("location", "location" ),
-                    ("description", "description" ),
-                    ("language", "language" ),
-                    ("ext_editor", "ext_editor" ),
-                    ("wysiwyg_editor", "wysiwyg_editor" ),
-                    ("visible_ids", "visible_ids" ),
-                    ]
+    _properties = [("id", "zope_id"),
+                   ("login", "login"),
+                   ("email", "email"),
+                   ("portal_skin", "portal_skin"),
+                   ("listed", "listed"),
+                   ("login_time", "login_time"),
+                   ("last_login_time", "last_login_time"),
+                   ("fullname", "fullname"),
+                   ("error_log_update", "error_log_update"),
+                   ("home_page", "home_page"),
+                   ("location", "location"),
+                   ("description", "description"),
+                   ("language", "language"),
+                   ("ext_editor", "ext_editor"),
+                   ("wysiwyg_editor", "wysiwyg_editor"),
+                   ("visible_ids", "visible_ids"),
+                   ]
 
     # Make password read-only
     @synonym_for("_password")
@@ -147,7 +151,7 @@ class User(Principal):
         return ''.join(random.sample(string.letters, 12))
 
     def encrypt(self, password):
-        return sha(password+self.salt).hexdigest()
+        return sha(password + self.salt).hexdigest()
 
     def set_password(self, password):
         self._salt = self.generate_salt()
@@ -160,29 +164,33 @@ class User(Principal):
         return ("<User id=%s login=%s name=%s>" % (
             str(self.id), self.login, self.zope_id)).encode('utf-8')
 
+
 class Group(Principal):
     __tablename__ = "groups"
     __mapper_args__ = {"polymorphic_identity": "group"}
 
     group_id = Column("id", Integer(), ForeignKey(Principal.id),
-            primary_key=True)
+                      primary_key=True)
     title = Column(String(40), default=u"")
     description = Column(String(40), default=u"")
     email = Column(String(40), default=u"")
 
-    members = relation(Principal, secondary=group_member_table, backref="groups")
+    members = relation(
+        Principal, secondary=group_member_table, backref="groups")
 
-    _roles =  relation(
-        RoleAssignment, collection_class=set, cascade="all, delete, delete-orphan")
+    _roles = relation(
+        RoleAssignment,
+        collection_class=set,
+        cascade="all, delete, delete-orphan"
+    )
     roles = association_proxy("_roles", "name")
 
-    _properties = [("id", "zope_id" ),
-                   ("title", "title" ),
-                   ("description", "description" ),
-                   ("email", "email" ),
+    _properties = [("id", "zope_id"),
+                   ("title", "title"),
+                   ("description", "description"),
+                   ("email", "email"),
                    ]
 
     def __repr__(self):
         return ("<Group id=%d name=%s>" % (
             str(self.id), self.zope_id)).encode('utf-8')
-

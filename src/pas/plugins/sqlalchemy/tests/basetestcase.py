@@ -1,31 +1,19 @@
 # -*- coding: utf-8 -*-
-
+from pas.plugins.sqlalchemy.setuphandlers import plugin_name
+from Products.PlonePAS.Extensions import Install as ppasinstall
 from Testing import ZopeTestCase
+from z3c.saconfig import EngineFactory
+from z3c.saconfig import GloballyScopedSession
+from z3c.saconfig import named_scoped_session
+from z3c.saconfig.interfaces import IScopedSession
 from zope import component
 from zope.component import testing
-
 import transaction
-import Products.Five
-
-from Products.Five import zcml
-
-#from Products.CMFPlone.tests import PloneTestCase
-#from Products.PloneTestCase.layer import PloneSite
 
 
 ZopeTestCase.installProduct('PlonePAS')
 ZopeTestCase.installProduct('PluggableAuthService')
 ZopeTestCase.installProduct('StandardCacheManagers')
-
-from Products.PlonePAS.Extensions import Install as ppasinstall
-
-import pas.plugins.sqlalchemy
-from pas.plugins.sqlalchemy.setuphandlers import plugin_name
-
-from z3c.saconfig import GloballyScopedSession
-from z3c.saconfig.interfaces import IScopedSession
-from z3c.saconfig import EngineFactory
-from z3c.saconfig import named_scoped_session
 
 Session = named_scoped_session("pas.plugins.sqlalchemy")
 
@@ -33,24 +21,31 @@ TEST_TWOPHASE = False
 SANDBOX_ID = 'sandbox'
 CACHE_MANAGER_ID = 'cm_test'
 
-class TrivialUser:
+
+class TrivialUser(object):
+
     def __init__(self, id):
-        self.id=id
+        self.id = id
+
     def getId(self):
         return self.id
+
     def getUserName(self):
         return self.id
+
     def isGroup(self):
         return False
 
-class SQLLayer:
+
+class SQLLayer(object):
+
     @classmethod
-    def setUp( cls ):
+    def setUp(cls):
         from pas.plugins.sqlalchemy.model import Base
 
         testing.setUp()
-        zcml.load_config('meta.zcml', Products.Five)
-        zcml.load_config('configure.zcml', pas.plugins.sqlalchemy)
+        # zcml.load_config('meta.zcml', Products.Five)
+        # zcml.load_config('configure.zcml', pas.plugins.sqlalchemy)
 
         app = ZopeTestCase.app()
 
@@ -70,11 +65,11 @@ class SQLLayer:
         cls.pas = cls.setupPAS(sandbox)
 
         utility = GloballyScopedSession(
-                  bind=engine,
-                  twophase=TEST_TWOPHASE)
+            bind=engine,
+            twophase=TEST_TWOPHASE)
 
         component.provideUtility(utility, provides=IScopedSession,
-                name="pas.plugins.sqlalchemy")
+                                 name="pas.plugins.sqlalchemy")
 
         transaction.commit()
         ZopeTestCase.close(app)
@@ -82,7 +77,7 @@ class SQLLayer:
     @classmethod
     def tearDown(cls):
         from pas.plugins.sqlalchemy.model import Base
-        session = Session()
+        Session()
         Base.metadata.drop_all()
         testing.tearDown()
         app = ZopeTestCase.app()
@@ -97,22 +92,25 @@ class SQLLayer:
         pas = container.acl_users
         ppasinstall.registerPluginTypes(pas)
         from pas.plugins.sqlalchemy import setuphandlers
-        setuphandlers.install_pas_plugin( container )
+        setuphandlers.install_pas_plugin(container)
         return pas
+
 
 class BaseTestCase(ZopeTestCase.ZopeTestCase):
     layer = SQLLayer
     username = u'j\xfcrgen'
     password = 'passw0rd'
 
-    def getPAS( self ):
+    def getPAS(self):
         return self.layer.pas
 
-    def beforeTearDown( self ):
+    def beforeTearDown(self):
         session = Session()
         session.close()
 
+
 class CacheTestCase(BaseTestCase):
+
     def afterSetUp(self):
         BaseTestCase.afterSetUp(self)
         self.plugin = self.getPAS()[plugin_name]
@@ -122,5 +120,3 @@ class CacheTestCase(BaseTestCase):
     def beforeTearDown(self):
         BaseTestCase.beforeTearDown(self)
         self.plugin.ZCacheable_setManagerId(None)
-
-
