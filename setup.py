@@ -9,6 +9,7 @@ def read(*rnames):
 
 requires = [
     'DateTime>=2.11',
+    'Plone',
     'setuptools',
     'SQLAlchemy',
     'z3c.saconfig',
@@ -19,7 +20,7 @@ tests_requires = requires + ['pysqlite']
 
 setup(
     name='pas.plugins.sqlalchemy',
-    version='0.4dev0',
+    version='0.4.dev0',
     description="SQLAlchemy-based PAS user/group/prop store.",
     long_description=read("README.rst") + '\n\n' + read("CHANGES.rst"),
     classifiers=[
@@ -40,6 +41,9 @@ setup(
     namespace_packages=['pas', 'pas.plugins'],
     zip_safe=False,
     install_requires=requires,
+    extras_require={
+        'test': tests_requires,
+    },
     tests_require=tests_requires,
     test_suite="pas.plugins.sqlalchemy",
     entry_points="""
