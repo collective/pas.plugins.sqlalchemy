@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from Products.PluggableAuthService.PluggableAuthService import MultiPlugins
-from Products.PluggableAuthService.PluggableAuthService import registerMultiPlugin
+from Products.PluggableAuthService.PluggableAuthService import \
+    registerMultiPlugin
 import plugin
 
 plugins = set()

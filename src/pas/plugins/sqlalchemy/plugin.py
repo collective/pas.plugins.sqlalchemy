@@ -19,15 +19,9 @@ from Products.PlonePAS.interfaces.plugins import IUserManagement
 from Products.PlonePAS.interfaces.propertysheets import IMutablePropertySheet
 from Products.PlonePAS.plugins.group import PloneGroup
 from Products.PluggableAuthService.events import PropertiesUpdated
-from Products.PluggableAuthService.interfaces.plugins import IAuthenticationPlugin
-from Products.PluggableAuthService.interfaces.plugins import IGroupEnumerationPlugin
-from Products.PluggableAuthService.interfaces.plugins import IGroupsPlugin,
-from Products.PluggableAuthService.interfaces.plugins import IPropertiesPlugin
-from Products.PluggableAuthService.interfaces.plugins import IRoleAssignerPlugin
-from Products.PluggableAuthService.interfaces.plugins import IRolesPlugin
-from Products.PluggableAuthService.interfaces.plugins import IUserAdderPlugin,
-from Products.PluggableAuthService.interfaces.plugins import IUserEnumerationPlugin
-from Products.PluggableAuthService.permissions import ManageUsers, ManageGroups
+from Products.PluggableAuthService.interfaces import plugins as pasplugins
+from Products.PluggableAuthService.permissions import ManageGroups
+from Products.PluggableAuthService.permissions import ManageUsers
 from Products.PluggableAuthService.permissions import SetOwnPassword
 from Products.PluggableAuthService.plugins.BasePlugin import BasePlugin
 from Products.PluggableAuthService.UserPropertySheet import UserPropertySheet
@@ -1010,14 +1004,14 @@ class Plugin(BasePlugin, Cacheable):
     def _get_groups_for_principal_from_pas(self, principal):
         plugins = self._getPAS()._getOb('plugins')
 
-        for name, plugin in plugins.listPlugins(IGroupsPlugin):
+        for name, plugin in plugins.listPlugins(pasplugins.IGroupsPlugin):
             groups = plugin.getGroupsForPrincipal(principal)
             if groups:
                 yield groups
 
     def _get_properties_for_user_from_pas(self, principal):
         plugins = self._getPAS()._getOb('plugins')
-        propfinders = plugins.listPlugins(IPropertiesPlugin)
+        propfinders = plugins.listPlugins(pasplugins.IPropertiesPlugin)
         for propfinder_id, propfinder in propfinders:
             data = propfinder.getPropertiesForUser(principal, request=None)
             if data:
@@ -1025,7 +1019,7 @@ class Plugin(BasePlugin, Cacheable):
 
     def _get_roles_for_principal_from_pas(self, principal):
         plugins = self._getPAS()._getOb('plugins')
-        rolemakers = plugins.listPlugins(IRolesPlugin)
+        rolemakers = plugins.listPlugins(pasplugins.IRolesPlugin)
 
         for rolemaker_id, rolemaker in rolemakers:
             roles = rolemaker.getRolesForPrincipal(principal, request=None)
@@ -1042,20 +1036,20 @@ class Plugin(BasePlugin, Cacheable):
 
 classImplements(
     Plugin,
-    IAuthenticationPlugin,
-    IUserEnumerationPlugin,
-    IUserAdderPlugin,
+    pasplugins.IAuthenticationPlugin,
+    pasplugins.IUserEnumerationPlugin,
+    pasplugins.IUserAdderPlugin,
     IUserManagement,
     IDeleteCapability,
     IPasswordSetCapability,
-    IRolesPlugin,
-    IRoleAssignerPlugin,
+    pasplugins.IRolesPlugin,
+    pasplugins.IRoleAssignerPlugin,
     IAssignRoleCapability,
     IGroupCapability,
-    IPropertiesPlugin,
+    pasplugins.IPropertiesPlugin,
     IMutablePropertiesPlugin,
-    IGroupsPlugin,
-    IGroupEnumerationPlugin,
+    pasplugins.IGroupsPlugin,
+    pasplugins.IGroupEnumerationPlugin,
     IGroupIntrospection,
     IGroupManagement)
 
