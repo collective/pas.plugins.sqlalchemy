@@ -25,7 +25,7 @@ SANDBOX_ID = 'sandbox'
 CACHE_MANAGER_ID = 'cm_test'
 
 
-class TrivialUser:
+class TrivialUser(object):
 
     def __init__(self, id):
         self.id = id
@@ -40,15 +40,15 @@ class TrivialUser:
         return False
 
 
-class SQLLayer:
+class SQLLayer(object):
 
     @classmethod
     def setUp(cls):
         from pas.plugins.sqlalchemy.model import Base
 
         testing.setUp()
-        zcml.load_config('meta.zcml', Products.Five)
-        zcml.load_config('configure.zcml', pas.plugins.sqlalchemy)
+        # zcml.load_config('meta.zcml', Products.Five)
+        # zcml.load_config('configure.zcml', pas.plugins.sqlalchemy)
 
         app = ZopeTestCase.app()
 
