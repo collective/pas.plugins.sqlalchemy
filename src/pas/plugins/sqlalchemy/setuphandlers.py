@@ -10,7 +10,7 @@ plugin_name = "sql"
 
 def install_pas_plugin(self):
     pas = self.acl_users
-    if not plugin_name in pas.objectIds():
+    if plugin_name not in pas.objectIds():
         manager = plugin.Plugin(
             plugin_name, "SQLAlchemy user/group/prop store")
         pas._setObject(plugin_name, manager)

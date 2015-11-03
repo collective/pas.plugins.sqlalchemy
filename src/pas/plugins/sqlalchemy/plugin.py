@@ -42,8 +42,11 @@ Session = named_scoped_session("pas.plugins.sqlalchemy")
 
 logger = logging.getLogger("pas.plugins.sqlalchemy")
 
-manage_addSqlalchemyPlugin = PageTemplateFile("templates/addPlugin",
-                                              globals(), __name__="manage_addPlugin")
+manage_addSqlalchemyPlugin = PageTemplateFile(
+    "templates/addPlugin",
+    globals(),
+    __name__="manage_addPlugin"
+)
 
 
 def addSqlalchemyPlugin(self, id, title="", user_model=None,
@@ -56,9 +59,10 @@ def addSqlalchemyPlugin(self, id, title="", user_model=None,
     self._setObject(p.getId(), p)
 
     if REQUEST is not None:
-        REQUEST.response.redirect("%s/manage_workspace"
-                                  "?manage_tabs_message=SQLAlchemy+plugin+added." %
-                                  self.absolute_url())
+        REQUEST.response.redirect(
+            "%s/manage_workspace?manage_tabs_message=SQLAlchemy+plugin+"
+            "added." % self.absolute_url()
+        )
 
 
 def safeencode(v):
@@ -84,7 +88,9 @@ def graceful_recovery(default=None, log_args=True):
                 except:
                     exc_str = "<%s at 0x%x>" % (e.__class__.__name__, id(e))
                 logger.critical(
-                    "Apparently we haven't yet configured a z3c.saconfig connection\n%s" % exc_str)
+                    "Apparently we haven't yet configured a z3c.saconfig "
+                    "connection\n%s" % exc_str
+                )
                 return default
             except rdb.exc.SQLAlchemyError as e:
                 if log_args is False:

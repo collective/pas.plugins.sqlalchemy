@@ -80,7 +80,7 @@ class SQLLayer:
     @classmethod
     def tearDown(cls):
         from pas.plugins.sqlalchemy.model import Base
-        session = Session()
+        Session()
         Base.metadata.drop_all()
         testing.tearDown()
         app = ZopeTestCase.app()

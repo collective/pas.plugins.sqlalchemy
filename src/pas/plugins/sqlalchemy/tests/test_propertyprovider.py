@@ -58,9 +58,10 @@ class TestPropertyProvider(basetestcase.BaseTestCase):
         props = self.source_properties.getPropertiesForUser(self.user)
         self.assertEqual(props.getProperty('fullname'), u'')
         self.assertEqual(props.getProperty('email'), u'')
-        # The plugin should (at least in plone 4) return what it is given - this is the behaviour
-        # of the PlonePAS property plugin. If it is unicode, it will later be converted to utf-8.
-        # (In PlonePAS/plugins/ufactory.py(220)getProperty())
+        # The plugin should (at least in plone 4) return what it is given -
+        # this is the behaviour of the PlonePAS property plugin. If it is
+        # unicode, it will later be converted to utf-8. (In
+        # PlonePAS/plugins/ufactory.py(220)getProperty())
         info = {
             'fullname': u'J\xfcrgen Schmoe',
             'email': 'joe@localhost.localdomain'
@@ -95,7 +96,7 @@ class TestPropertyCaching(basetestcase.CacheTestCase):
         self.failUnless(user is _marker)
 
     def testCacheSingleQuery(self):
-        props = self.plugin.getPropertiesForUser(self.user)
+        self.plugin.getPropertiesForUser(self.user)
         view_name = createViewName('getPropertiesForUser', self.username)
         user = self.plugin.ZCacheable_get(
             view_name=view_name,
@@ -103,8 +104,8 @@ class TestPropertyCaching(basetestcase.CacheTestCase):
         self.failUnless(user is not _marker)
 
     def testCacheTwoQueries(self):
-        props = self.plugin.getPropertiesForUser(self.user)
-        props = self.plugin.getPropertiesForUser(self.other_user)
+        self.plugin.getPropertiesForUser(self.user)
+        self.plugin.getPropertiesForUser(self.other_user)
 
         view_name = createViewName('getPropertiesForUser', self.username)
         user = self.plugin.ZCacheable_get(
@@ -119,7 +120,7 @@ class TestPropertyCaching(basetestcase.CacheTestCase):
         self.failUnless(user is not _marker)
 
     def testUpdateZapsCache(self):
-        props = self.plugin.getPropertiesForUser(self.user)
+        self.plugin.getPropertiesForUser(self.user)
         info = {
             'fullname': u'Jane Doe',
         }

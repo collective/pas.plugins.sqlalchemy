@@ -63,7 +63,7 @@ class TestEnumerateUsers(basetestcase.BaseTestCase):
     def testReturnFormat(self):
         ret = self.plugin.enumerateUsers(id='user_1', exact_match=True)
         expected = (dict(login='user_1', id='user_1', pluginid=plugin_name),)
-        #self.assertEqual( ret, expected )
+        # self.assertEqual( ret, expected )
 
         self.assertEqual(len(ret), len(expected))
         self.assertEqual(ret[0]['login'], expected[0]['login'])

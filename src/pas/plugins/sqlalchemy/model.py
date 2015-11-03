@@ -96,7 +96,10 @@ class User(Principal):
 
     # roles
     _roles = relation(
-        RoleAssignment, collection_class=set, cascade="all, delete, delete-orphan")
+        RoleAssignment,
+        collection_class=set,
+        cascade="all, delete, delete-orphan"
+    )
     roles = association_proxy("_roles", "name")
 
     # memberdata property sheet
@@ -176,7 +179,10 @@ class Group(Principal):
         Principal, secondary=group_member_table, backref="groups")
 
     _roles = relation(
-        RoleAssignment, collection_class=set, cascade="all, delete, delete-orphan")
+        RoleAssignment,
+        collection_class=set,
+        cascade="all, delete, delete-orphan"
+    )
     roles = association_proxy("_roles", "name")
 
     _properties = [("id", "zope_id"),
