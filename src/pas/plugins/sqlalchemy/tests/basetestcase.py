@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 from pas.plugins.sqlalchemy.setuphandlers import plugin_name
-from Products.Five import zcml
 from Products.PlonePAS.Extensions import Install as ppasinstall
 from Testing import ZopeTestCase
 from z3c.saconfig import EngineFactory
@@ -9,8 +8,6 @@ from z3c.saconfig import named_scoped_session
 from z3c.saconfig.interfaces import IScopedSession
 from zope import component
 from zope.component import testing
-import pas.plugins.sqlalchemy
-import Products.Five
 import transaction
 
 
