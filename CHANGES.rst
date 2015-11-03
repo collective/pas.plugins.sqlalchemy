@@ -1,7 +1,7 @@
 Changelog
 =========
 
-0.3.1 (unreleased)
+0.4 (unreleased)
 ------------------
 
 - using _get_principal_by_id to get principal in doChangeUser,
