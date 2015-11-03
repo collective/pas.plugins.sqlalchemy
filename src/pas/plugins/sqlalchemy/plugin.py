@@ -1,58 +1,48 @@
 # -*- coding: utf-8 -*-
-import datetime
-import logging
-import sqlalchemy as rdb
+from AccessControl import ClassSecurityInfo
+from AccessControl.SecurityManagement import getSecurityManager
+from Acquisition import aq_get
+from DateTime import DateTime
+from Globals import InitializeClass
+from OFS.Cache import Cacheable
+from pas.plugins.sqlalchemy import model
+from Products.CMFCore.utils import getToolByName
+from Products.PageTemplates.PageTemplateFile import PageTemplateFile
+from Products.PlonePAS.interfaces.capabilities import IAssignRoleCapability
+from Products.PlonePAS.interfaces.capabilities import IDeleteCapability
+from Products.PlonePAS.interfaces.capabilities import IGroupCapability
+from Products.PlonePAS.interfaces.capabilities import IPasswordSetCapability
+from Products.PlonePAS.interfaces.group import IGroupIntrospection
+from Products.PlonePAS.interfaces.group import IGroupManagement
+from Products.PlonePAS.interfaces.plugins import IMutablePropertiesPlugin
+from Products.PlonePAS.interfaces.plugins import IUserManagement
+from Products.PlonePAS.interfaces.propertysheets import IMutablePropertySheet
+from Products.PlonePAS.plugins.group import PloneGroup
+from Products.PluggableAuthService.events import PropertiesUpdated
+from Products.PluggableAuthService.interfaces.plugins import IAuthenticationPlugin
+from Products.PluggableAuthService.interfaces.plugins import IGroupEnumerationPlugin
+from Products.PluggableAuthService.interfaces.plugins import IGroupsPlugin,
+from Products.PluggableAuthService.interfaces.plugins import IPropertiesPlugin
+from Products.PluggableAuthService.interfaces.plugins import IRoleAssignerPlugin
+from Products.PluggableAuthService.interfaces.plugins import IRolesPlugin
+from Products.PluggableAuthService.interfaces.plugins import IUserAdderPlugin,
+from Products.PluggableAuthService.interfaces.plugins import IUserEnumerationPlugin
+from Products.PluggableAuthService.permissions import ManageUsers, ManageGroups
+from Products.PluggableAuthService.permissions import SetOwnPassword
+from Products.PluggableAuthService.plugins.BasePlugin import BasePlugin
+from Products.PluggableAuthService.UserPropertySheet import UserPropertySheet
+from Products.PluggableAuthService.utils import classImplements
+from Products.PluggableAuthService.utils import createViewName
 from sqlalchemy import sql
-import traceback
-
+from z3c.saconfig import named_scoped_session
+from zope.component.interfaces import ComponentLookupError
 from zope.dottedname.resolve import resolve
 from zope.event import notify
 from zope.interface import implements
-from zope.component.interfaces import ComponentLookupError
-
-from Acquisition import aq_get
-from AccessControl import ClassSecurityInfo
-from AccessControl.SecurityManagement import getSecurityManager
-from Globals import InitializeClass
-from Products.CMFCore.utils import getToolByName
-from Products.PageTemplates.PageTemplateFile import PageTemplateFile
-from Products.PluggableAuthService.utils import classImplements
-from Products.PluggableAuthService.plugins.BasePlugin import BasePlugin
-from Products.PluggableAuthService.permissions import ManageUsers, ManageGroups
-from Products.PluggableAuthService.permissions import SetOwnPassword
-from Products.PluggableAuthService.utils import createViewName
-from Products.PluggableAuthService.events import PropertiesUpdated
-from Products.PluggableAuthService.UserPropertySheet import UserPropertySheet
-
-from OFS.Cache import Cacheable
-from DateTime import DateTime
-
-# Pluggable Auth Service
-from Products.PluggableAuthService.interfaces.plugins import (
-    IUserAdderPlugin,
-    IRolesPlugin,
-    IGroupsPlugin,
-    IPropertiesPlugin,
-    IAuthenticationPlugin,
-    IUserEnumerationPlugin,
-    IRoleAssignerPlugin,
-    IGroupEnumerationPlugin
-)
-
-# PlonePAS
-from Products.PlonePAS.interfaces.plugins import IUserManagement
-from Products.PlonePAS.interfaces.capabilities import IDeleteCapability
-from Products.PlonePAS.interfaces.capabilities import IPasswordSetCapability
-from Products.PlonePAS.interfaces.capabilities import IAssignRoleCapability
-from Products.PlonePAS.interfaces.capabilities import IGroupCapability
-from Products.PlonePAS.interfaces.plugins import IMutablePropertiesPlugin
-from Products.PlonePAS.interfaces.group import IGroupIntrospection
-from Products.PlonePAS.interfaces.group import IGroupManagement
-from Products.PlonePAS.plugins.group import PloneGroup
-from Products.PlonePAS.interfaces.propertysheets import IMutablePropertySheet
-
-from pas.plugins.sqlalchemy import model
-from z3c.saconfig import named_scoped_session
+import datetime
+import logging
+import sqlalchemy as rdb
+import traceback
 
 Session = named_scoped_session("pas.plugins.sqlalchemy")
 

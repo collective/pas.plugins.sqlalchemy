@@ -17,29 +17,27 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program; if not, write to the Free Software
 #  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-
-import random
-import string
-import datetime
-
-try:
-    from hashlib import sha1 as sha
-except:
-    from sha import sha
-
-from zope.interface import implements
-
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.sql import functions
-from sqlalchemy import Table, Column, Integer, String, Boolean, \
-    DateTime
-from sqlalchemy import Text, Float, ForeignKey, Sequence
-from sqlalchemy.orm import relation
-from sqlalchemy.ext.associationproxy import association_proxy
-from sqlalchemy.ext.declarative import synonym_for
-
+from hashlib import sha1 as sha
 from pas.plugins.sqlalchemy.interfaces import IEncryptedPasswordAware
 from pas.plugins.sqlalchemy.interfaces import IUser
+from sqlalchemy import Boolean
+from sqlalchemy import Column
+from sqlalchemy import DateTime
+from sqlalchemy import Float
+from sqlalchemy import ForeignKey
+from sqlalchemy import Integer
+from sqlalchemy import Sequence
+from sqlalchemy import String
+from sqlalchemy import Table
+from sqlalchemy import Text
+from sqlalchemy.ext.associationproxy import association_proxy
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.ext.declarative import synonym_for
+from sqlalchemy.orm import relation
+from sqlalchemy.sql import functions
+from zope.interface import implements
+import random
+import string
 
 Base = declarative_base()
 

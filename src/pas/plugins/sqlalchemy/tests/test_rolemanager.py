@@ -1,12 +1,9 @@
 # -*- coding: utf-8 -*-
 # tests from sqlpasplugin ( GPL v2 )
-
-from pas.plugins.sqlalchemy.tests import basetestcase
 from pas.plugins.sqlalchemy.setuphandlers import plugin_name
-
-from Products.PluggableAuthService.utils import createViewName
-
+from pas.plugins.sqlalchemy.tests import basetestcase
 from pas.plugins.sqlalchemy.tests.basetestcase import TrivialUser
+from Products.PluggableAuthService.utils import createViewName
 
 _marker = []
 

@@ -1,31 +1,22 @@
 # -*- coding: utf-8 -*-
-
+from pas.plugins.sqlalchemy.setuphandlers import plugin_name
+from Products.Five import zcml
+from Products.PlonePAS.Extensions import Install as ppasinstall
 from Testing import ZopeTestCase
+from z3c.saconfig import EngineFactory
+from z3c.saconfig import GloballyScopedSession
+from z3c.saconfig import named_scoped_session
+from z3c.saconfig.interfaces import IScopedSession
 from zope import component
 from zope.component import testing
-
-import transaction
+import pas.plugins.sqlalchemy
 import Products.Five
-
-from Products.Five import zcml
-
-#from Products.CMFPlone.tests import PloneTestCase
-#from Products.PloneTestCase.layer import PloneSite
+import transaction
 
 
 ZopeTestCase.installProduct('PlonePAS')
 ZopeTestCase.installProduct('PluggableAuthService')
 ZopeTestCase.installProduct('StandardCacheManagers')
-
-from Products.PlonePAS.Extensions import Install as ppasinstall
-
-import pas.plugins.sqlalchemy
-from pas.plugins.sqlalchemy.setuphandlers import plugin_name
-
-from z3c.saconfig import GloballyScopedSession
-from z3c.saconfig.interfaces import IScopedSession
-from z3c.saconfig import EngineFactory
-from z3c.saconfig import named_scoped_session
 
 Session = named_scoped_session("pas.plugins.sqlalchemy")
 

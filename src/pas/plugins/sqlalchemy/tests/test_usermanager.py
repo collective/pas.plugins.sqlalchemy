@@ -1,11 +1,9 @@
 # -*- coding: utf-8 -*-
 # tests from sqlpasplugin ( GPL v2 )
-
-from Products.PlonePAS.sheet import MutablePropertySheet
-
-from pas.plugins.sqlalchemy.tests import basetestcase
 from pas.plugins.sqlalchemy.setuphandlers import plugin_name
+from pas.plugins.sqlalchemy.tests import basetestcase
 from pas.plugins.sqlalchemy.tests.basetestcase import TrivialUser
+from Products.PlonePAS.sheet import MutablePropertySheet
 
 
 class TestUserManager(basetestcase.BaseTestCase):

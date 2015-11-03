@@ -1,12 +1,10 @@
 # -*- coding: utf-8 -*-
-import logging
-import unittest
-
 from pas.plugins.sqlalchemy.plugin import graceful_recovery
 from pas.plugins.sqlalchemy.plugin import logger
-from z3c.saconfig import named_scoped_session
-
 from sqlalchemy import exc
+from z3c.saconfig import named_scoped_session
+import logging
+import unittest
 
 Session = named_scoped_session("pas.plugins.sqlalchemy")
 
