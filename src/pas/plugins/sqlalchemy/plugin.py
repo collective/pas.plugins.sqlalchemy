@@ -93,7 +93,7 @@ def graceful_recovery(default=None, log_args=True):
         def wrapper(*args, **kwargs):
             try:
                 value = func(*args, **kwargs)
-            except ComponentLookupError, e:
+            except ComponentLookupError as e:
                 try:
                     exc_str = str(e)
                 except:
@@ -101,7 +101,7 @@ def graceful_recovery(default=None, log_args=True):
                 logger.critical(
                     "Apparently we haven't yet configured a z3c.saconfig connection\n%s" % exc_str)
                 return default
-            except rdb.exc.SQLAlchemyError, e:
+            except rdb.exc.SQLAlchemyError as e:
                 if log_args is False:
                     args = ()
                     kwargs = {}
@@ -205,7 +205,7 @@ class Plugin(BasePlugin, Cacheable):
         if cls is None:
             try:
                 cls = self._v_principal_class = resolve(self.principal_model)
-            except ImportError, e:
+            except ImportError as e:
                 logger.error("Unable to import user model: %s", e)
                 cls = self._v_principal_class = model.Principal
         return cls
@@ -216,7 +216,7 @@ class Plugin(BasePlugin, Cacheable):
         if cls is None:
             try:
                 cls = self._v_user_class = resolve(self.user_model)
-            except ImportError, e:
+            except ImportError as e:
                 logger.error("Unable to import user model: %s", e)
                 cls = self._v_user_class = model.User
         return cls
@@ -227,7 +227,7 @@ class Plugin(BasePlugin, Cacheable):
         if cls is None:
             try:
                 cls = self._v_group_class = resolve(self.group_model)
-            except ImportError, e:
+            except ImportError as e:
                 logger.error("Unable to import group model: %s", e)
                 cls = self._v_group_class = model.Group
         return cls
@@ -500,7 +500,8 @@ class Plugin(BasePlugin, Cacheable):
 
     security.declarePrivate('doAssignRoleToPrincipal')
 
-    def doAssignRoleToPrincipal(self, principal_id, role, invalidate_cache=True):
+    def doAssignRoleToPrincipal(
+            self, principal_id, role, invalidate_cache=True):
         """ Create a principal/role association in a Role Manager
 
         o Return a Boolean indicating whether the role was assigned or not
@@ -523,7 +524,8 @@ class Plugin(BasePlugin, Cacheable):
     security.declarePrivate('getRolesForPrincipal')
 
     @graceful_recovery(())
-    def getRolesForPrincipal(self, principal, request=None, ignore_groups=False):
+    def getRolesForPrincipal(
+            self, principal, request=None, ignore_groups=False):
         """ principal -> ( role_1, ... role_N )
 
         o Return a sequence of role names which the principal has.
