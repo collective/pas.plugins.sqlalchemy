@@ -227,6 +227,17 @@ class Plugin(BasePlugin, Cacheable):
     # IUserManagement implementation
     #
 
+    security.declarePrivate('updateUser')
+    @graceful_recovery()
+    def updateUser(self, user_id, login_name):
+        session = Session()
+        principal = self._get_principal_by_id(user_id)
+        principal.zope_id = login_name
+        userquery = session.query(self.user_class).filter_by(zope_id=user_id)
+        userquery = userquery.first()
+        userquery.login = login_name
+
+
     security.declarePrivate('doChangeUser')
 
     @graceful_recovery()
