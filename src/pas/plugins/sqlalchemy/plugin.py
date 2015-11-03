@@ -85,7 +85,7 @@ def graceful_recovery(default=None, log_args=True):
             except ComponentLookupError as e:
                 try:
                     exc_str = str(e)
-                except:
+                except Exception as e:
                     exc_str = "<%s at 0x%x>" % (e.__class__.__name__, id(e))
                 logger.critical(
                     "Apparently we haven't yet configured a z3c.saconfig "
@@ -101,7 +101,7 @@ def graceful_recovery(default=None, log_args=True):
 
                 try:
                     exc_str = str(e)
-                except:
+                except Exception as e:
                     exc_str = "<%s at 0x%x>" % (e.__class__.__name__, id(e))
 
                 logger.critical(
