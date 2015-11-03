@@ -3,6 +3,7 @@ from zope.interface import Attribute
 
 
 class IPasswordAware(Interface):
+
     def check_password(password):
         """Return ``True`` if password is correct."""
 
@@ -11,6 +12,7 @@ class IPasswordAware(Interface):
 
 
 class IEncryptedPasswordAware(IPasswordAware):
+
     def encrypt(password):
         """Return encrypted password."""
 
@@ -21,4 +23,4 @@ class IEncryptedPasswordAware(IPasswordAware):
 class IUser(Interface):
     zope_id = Attribute(
         """Principal id string."""
-        )
+    )

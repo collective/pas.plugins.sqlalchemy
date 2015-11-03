@@ -33,19 +33,26 @@ TEST_TWOPHASE = False
 SANDBOX_ID = 'sandbox'
 CACHE_MANAGER_ID = 'cm_test'
 
+
 class TrivialUser:
+
     def __init__(self, id):
-        self.id=id
+        self.id = id
+
     def getId(self):
         return self.id
+
     def getUserName(self):
         return self.id
+
     def isGroup(self):
         return False
 
+
 class SQLLayer:
+
     @classmethod
-    def setUp( cls ):
+    def setUp(cls):
         from pas.plugins.sqlalchemy.model import Base
 
         testing.setUp()
@@ -70,11 +77,11 @@ class SQLLayer:
         cls.pas = cls.setupPAS(sandbox)
 
         utility = GloballyScopedSession(
-                  bind=engine,
-                  twophase=TEST_TWOPHASE)
+            bind=engine,
+            twophase=TEST_TWOPHASE)
 
         component.provideUtility(utility, provides=IScopedSession,
-                name="pas.plugins.sqlalchemy")
+                                 name="pas.plugins.sqlalchemy")
 
         transaction.commit()
         ZopeTestCase.close(app)
@@ -97,22 +104,25 @@ class SQLLayer:
         pas = container.acl_users
         ppasinstall.registerPluginTypes(pas)
         from pas.plugins.sqlalchemy import setuphandlers
-        setuphandlers.install_pas_plugin( container )
+        setuphandlers.install_pas_plugin(container)
         return pas
+
 
 class BaseTestCase(ZopeTestCase.ZopeTestCase):
     layer = SQLLayer
     username = u'j\xfcrgen'
     password = 'passw0rd'
 
-    def getPAS( self ):
+    def getPAS(self):
         return self.layer.pas
 
-    def beforeTearDown( self ):
+    def beforeTearDown(self):
         session = Session()
         session.close()
 
+
 class CacheTestCase(BaseTestCase):
+
     def afterSetUp(self):
         BaseTestCase.afterSetUp(self)
         self.plugin = self.getPAS()[plugin_name]
@@ -122,5 +132,3 @@ class CacheTestCase(BaseTestCase):
     def beforeTearDown(self):
         BaseTestCase.beforeTearDown(self)
         self.plugin.ZCacheable_setManagerId(None)
-
-

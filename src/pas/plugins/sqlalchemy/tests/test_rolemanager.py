@@ -93,19 +93,20 @@ class TestRoleManager(basetestcase.BaseTestCase):
 
         return_value = self.plugin.doRemoveRoleFromPrincipal('User1', 'First')
         self.assertTrue(return_value)
-        
+
         roles = self.plugin.getRolesForPrincipal('User1')
         self.assertEqual(roles, ('Second',))
         roles = self.plugin.getRolesForPrincipal('User2')
         self.assertTrue('First' in roles)
         self.assertTrue('Second' in roles)
-        
-        return_value = self.plugin.doRemoveRoleFromPrincipal('User1', 'NotThere')
+
+        return_value = self.plugin.doRemoveRoleFromPrincipal(
+            'User1', 'NotThere')
         self.assertTrue(not return_value)
-        
 
 
 class TestRoleCaching(basetestcase.CacheTestCase):
+
     def afterSetUp(self):
         basetestcase.CacheTestCase.afterSetUp(self)
         self.plugin = self.getPAS()[plugin_name]
@@ -115,69 +116,76 @@ class TestRoleCaching(basetestcase.CacheTestCase):
         self.failUnless(self.plugin.ZCacheable_isCachingEnabled())
 
     def testCacheStartsEmpty(self):
-        view_name = createViewName('getRolesForPrincipal-IgnDirFalse-IgnGrpFalse', self.username)
+        view_name = createViewName(
+            'getRolesForPrincipal-IgnDirFalse-IgnGrpFalse', self.username)
         user = self.plugin.ZCacheable_get(
-                view_name=view_name,
-                default=_marker)
+            view_name=view_name,
+            default=_marker)
 
         self.failUnless(user is _marker)
 
     def testSingleQuery(self):
-        user=TrivialUser(self.username)
+        user = TrivialUser(self.username)
         self.plugin.getRolesForPrincipal(user)
-        view_name = createViewName('getRolesForPrincipal-IgnDirFalse-IgnGrpFalse', self.username)
+        view_name = createViewName(
+            'getRolesForPrincipal-IgnDirFalse-IgnGrpFalse', self.username)
         user = self.plugin.ZCacheable_get(
-                view_name=view_name,
-                default=_marker)
+            view_name=view_name,
+            default=_marker)
         self.failUnless(user is not _marker)
 
     def testTwoQueres(self):
-        user=TrivialUser(self.username)
+        user = TrivialUser(self.username)
         self.plugin.getRolesForPrincipal(user)
         self.plugin.doAddUser("User1", self.password)
-        user1=TrivialUser("User1")
+        user1 = TrivialUser("User1")
         self.plugin.getRolesForPrincipal(user1)
 
-        view_name = createViewName('getRolesForPrincipal-IgnDirFalse-IgnGrpFalse', self.username)
+        view_name = createViewName(
+            'getRolesForPrincipal-IgnDirFalse-IgnGrpFalse', self.username)
         user = self.plugin.ZCacheable_get(
-                view_name=view_name,
-                default=_marker)
+            view_name=view_name,
+            default=_marker)
         self.failUnless(user is not _marker)
 
-        view_name = createViewName('getRolesForPrincipal-IgnDirFalse-IgnGrpFalse', 'User1')
+        view_name = createViewName(
+            'getRolesForPrincipal-IgnDirFalse-IgnGrpFalse', 'User1')
         user = self.plugin.ZCacheable_get(
-                view_name=view_name,
-                default=_marker)
+            view_name=view_name,
+            default=_marker)
         self.failUnless(user is not _marker)
 
     def testAssignRoleZapsCache(self):
-        user=TrivialUser(self.username)
+        user = TrivialUser(self.username)
         self.plugin.getRolesForPrincipal(user)
         self.plugin.doAssignRoleToPrincipal(self.username, 'henchman')
-        view_name = createViewName('getRolesForPrincipal-IgnDirFalse-IgnGrpFalse', self.username)
+        view_name = createViewName(
+            'getRolesForPrincipal-IgnDirFalse-IgnGrpFalse', self.username)
         user = self.plugin.ZCacheable_get(
-                view_name=view_name,
-                default=_marker)
+            view_name=view_name,
+            default=_marker)
         self.failUnless(user is _marker)
 
     def testAssignRoleKeepsCacheIfToldSo(self):
-        user=TrivialUser(self.username)
+        user = TrivialUser(self.username)
         self.plugin.getRolesForPrincipal(user)
         self.plugin.doAssignRoleToPrincipal(self.username, 'henchman', False)
-        view_name = createViewName('getRolesForPrincipal-IgnDirFalse-IgnGrpFalse', self.username)
+        view_name = createViewName(
+            'getRolesForPrincipal-IgnDirFalse-IgnGrpFalse', self.username)
         user = self.plugin.ZCacheable_get(
-                view_name=view_name,
-                default=_marker)
+            view_name=view_name,
+            default=_marker)
         self.failUnless(user is not _marker)
 
     def testAssignRolesZapsCache(self):
-        user=TrivialUser(self.username)
+        user = TrivialUser(self.username)
         self.plugin.getRolesForPrincipal(user)
         self.plugin.assignRolesToPrincipal(('henchman',), self.username)
-        view_name = createViewName('getRolesForPrincipal-IgnDirFalse-IgnGrpFalse', self.username)
+        view_name = createViewName(
+            'getRolesForPrincipal-IgnDirFalse-IgnGrpFalse', self.username)
         user = self.plugin.ZCacheable_get(
-                view_name=view_name,
-                default=_marker)
+            view_name=view_name,
+            default=_marker)
         self.failUnless(user is _marker)
 
     def testDoRemoveRoleFromPrincipalZapsCache(self):
@@ -188,17 +196,18 @@ class TestRoleCaching(basetestcase.CacheTestCase):
         self.assertTrue('First' in roles)
         self.assertTrue('Second' in roles)
 
-        view_name = createViewName('getRolesForPrincipal-IgnDirFalse-IgnGrpFalse', 'User1')
+        view_name = createViewName(
+            'getRolesForPrincipal-IgnDirFalse-IgnGrpFalse', 'User1')
         user = self.plugin.ZCacheable_get(
-                view_name=view_name,
-                default=_marker)
+            view_name=view_name,
+            default=_marker)
         self.failUnless(user is not _marker)
 
         self.plugin.doRemoveRoleFromPrincipal('User1', 'First')
-        
+
         user = self.plugin.ZCacheable_get(
-                view_name=view_name,
-                default=_marker)
+            view_name=view_name,
+            default=_marker)
         self.failUnless(user is _marker)
 
 
