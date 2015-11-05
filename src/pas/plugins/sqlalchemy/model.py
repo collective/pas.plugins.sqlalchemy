@@ -35,7 +35,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.ext.declarative import synonym_for
 from sqlalchemy.orm import relation
 from sqlalchemy.sql import functions
-from zope.interface import implements
+from zope.interface import implementer
 import random
 import string
 
@@ -78,8 +78,8 @@ class RoleAssignment(Base):
             str(self.id), self.principal_id, self.name)).encode('utf-8')
 
 
+@implementer(IUser, IEncryptedPasswordAware)
 class User(Principal):
-    implements(IUser, IEncryptedPasswordAware)
 
     __tablename__ = "users"
     __mapper_args__ = {'polymorphic_identity': 'user'}
@@ -185,12 +185,14 @@ class Group(Principal):
     )
     roles = association_proxy("_roles", "name")
 
-    _properties = [("id", "zope_id"),
-                   ("title", "title"),
-                   ("description", "description"),
-                   ("email", "email"),
-                   ]
+    _properties = [
+        ("id", "zope_id"),
+        ("title", "title"),
+        ("description", "description"),
+        ("email", "email"),
+    ]
 
     def __repr__(self):
         return ("<Group id=%d name=%s>" % (
-            str(self.id), self.zope_id)).encode('utf-8')
+            str(self.id), self.zope_id)
+        ).encode('utf-8')
