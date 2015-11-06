@@ -1,9 +1,5 @@
 # -*- coding: utf-8 -*-
-from z3c.saconfig import named_scoped_session
-import model
 import plugin
-
-Session = named_scoped_session("pas.plugins.sqlalchemy")
 
 plugin_name = "sql"
 
