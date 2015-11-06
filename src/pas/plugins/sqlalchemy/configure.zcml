@@ -9,7 +9,7 @@
   <include package="Products.GenericSetup" file="meta.zcml" />
 
   <genericsetup:registerProfile
-     name="install"
+     name="default"
      title="SQLAlchemy PAS install"
      description="This profile installs the PAS plugins."
      directory="profiles/install"

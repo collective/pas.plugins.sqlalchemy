@@ -4,6 +4,9 @@ Changelog
 0.4 (unreleased)
 ------------------
 
+- Standardize name of installation profile to ``default``.
+  [jensens]
+
 - modernized: Pep8, Travis CI, ...
   [jensens]
 
