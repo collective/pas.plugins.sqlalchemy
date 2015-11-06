@@ -37,16 +37,14 @@ def uninstall_pas_plugin(self):
 
 
 def uninstall(context):
-    if context.readDataFile('marker.txt') is None:
+    if context.readDataFile('pas_plugins_sqlalchemy_uninstall.txt') is None:
         return
     portal = context.getSite()
     uninstall_pas_plugin(portal)
 
 
 def install(context):
-    if context.readDataFile('marker.txt') is None:
+    if context.readDataFile('pas_plugins_sqlalchemy_install.txt') is None:
         return
     portal = context.getSite()
-    session = Session()
-    model.Base.metadata.create_all(session.bind)
     install_pas_plugin(portal)

@@ -4,6 +4,14 @@ Changelog
 0.4 (unreleased)
 ------------------
 
+- do not expect a configured database connection on plugin install time in
+  order to play nice with collective.saconnect. Also be less verbose if there
+  is no connection configured.
+  [jensens]
+
+- fix: different custom setup un-/install marker for install and uninstall
+  [jensens]
+
 - Standardize name of installation profile to ``default``.
   [jensens]
 

@@ -35,6 +35,7 @@ from zope.interface import implementer
 import datetime
 import logging
 import sqlalchemy as rdb
+import time
 import traceback
 
 Session = named_scoped_session("pas.plugins.sqlalchemy")
@@ -76,20 +77,29 @@ def safedecode(v):
     return v
 
 
+_V_ERROR_MARKER = '_v_pas.plugins.sqlalchemy_errored'
+
+
 def graceful_recovery(default=None, log_args=True):
     def decorator(func):
         def wrapper(*args, **kwargs):
             try:
                 value = func(*args, **kwargs)
             except ComponentLookupError as e:
+                # XXX this may mask different ComponentLookupErrors as well!
                 try:
                     exc_str = str(e)
                 except Exception as e:
                     exc_str = "<%s at 0x%x>" % (e.__class__.__name__, id(e))
-                logger.critical(
-                    "Apparently we haven't yet configured a z3c.saconfig "
-                    "connection\n%s" % exc_str
-                )
+                # only log once every 3 seconds
+                if getattr(args[0], _V_ERROR_MARKER, 0) < time.time() - 3:
+                    setattr(args[0], _V_ERROR_MARKER, time.time())
+                    logger.critical(
+                        "Apparently we haven't yet configured a z3c.saconfig "
+                        "connection. This may mask other "
+                        "ComponentLookupErrors as well!\n{0:s}".format(exc_str)
+                    )
+
                 return default
             except rdb.exc.SQLAlchemyError as e:
                 if log_args is False:
