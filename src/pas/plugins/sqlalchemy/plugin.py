@@ -25,7 +25,6 @@ from Products.PluggableAuthService.permissions import ManageUsers
 from Products.PluggableAuthService.permissions import SetOwnPassword
 from Products.PluggableAuthService.plugins.BasePlugin import BasePlugin
 from Products.PluggableAuthService.UserPropertySheet import UserPropertySheet
-from Products.PluggableAuthService.utils import classImplements
 from Products.PluggableAuthService.utils import createViewName
 from sqlalchemy import sql
 from z3c.saconfig import named_scoped_session
@@ -148,6 +147,24 @@ class MutablePropertySheet(UserPropertySheet):
         self._plugin.setPropertiesForUser(object, self)
 
 
+@implementer(
+    pasplugins.IAuthenticationPlugin,
+    pasplugins.IUserEnumerationPlugin,
+    pasplugins.IUserAdderPlugin,
+    IUserManagement,
+    IDeleteCapability,
+    IPasswordSetCapability,
+    pasplugins.IRolesPlugin,
+    pasplugins.IRoleAssignerPlugin,
+    IAssignRoleCapability,
+    IGroupCapability,
+    pasplugins.IPropertiesPlugin,
+    IMutablePropertiesPlugin,
+    pasplugins.IGroupsPlugin,
+    pasplugins.IGroupEnumerationPlugin,
+    IGroupIntrospection,
+    IGroupManagement
+)
 class Plugin(BasePlugin, Cacheable):
     meta_type = 'SQLAlchemy user/group/prop manager'
     security = ClassSecurityInfo()
@@ -167,7 +184,8 @@ class Plugin(BasePlugin, Cacheable):
          'label': 'SQLAlchemy Group model (dotted path)',
          'type': 'string',
          'mode': 'w',
-         })
+         }
+    )
 
     user_model = "pas.plugins.sqlalchemy.model.User"
     principal_model = "pas.plugins.sqlalchemy.model.Principal"
@@ -1007,24 +1025,5 @@ class Plugin(BasePlugin, Cacheable):
         )
         return query.first()
 
-
-classImplements(
-    Plugin,
-    pasplugins.IAuthenticationPlugin,
-    pasplugins.IUserEnumerationPlugin,
-    pasplugins.IUserAdderPlugin,
-    IUserManagement,
-    IDeleteCapability,
-    IPasswordSetCapability,
-    pasplugins.IRolesPlugin,
-    pasplugins.IRoleAssignerPlugin,
-    IAssignRoleCapability,
-    IGroupCapability,
-    pasplugins.IPropertiesPlugin,
-    IMutablePropertiesPlugin,
-    pasplugins.IGroupsPlugin,
-    pasplugins.IGroupEnumerationPlugin,
-    IGroupIntrospection,
-    IGroupManagement)
 
 InitializeClass(Plugin)
