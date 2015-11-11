@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-import plugin
+from pas.plugins.sqlalchemy import plugin
 
 plugin_name = "sql"
 
