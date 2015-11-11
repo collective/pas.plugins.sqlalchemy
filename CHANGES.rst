@@ -4,6 +4,10 @@ Changelog
 0.4 (unreleased)
 ------------------
 
+- fix: ``getPropertiesForUser`` uses principals ``_properties`` mapping now
+  to map to the column used for ``zope_id`` id this is needed.
+  [jensens]
+
 - do not expect a configured database connection on plugin install time in
   order to play nice with collective.saconnect. Also be less verbose if there
   is no connection configured.

@@ -626,10 +626,12 @@ class Plugin(BasePlugin, Cacheable):
             )
 
         session = Session()
-        query = session.query(self.principal_class).filter_by(
-            zope_id=user.getId()
+        column_name = dict(self.principal_class._properties).get(
+            'zope_id',  # map zope_id
+            'zope_id'   # if not mapped fall back to 'zope_id'
         )
-
+        filter_data = {column_name: user.getId()}
+        query = session.query(self.principal_class).filter_by(**filter_data)
         principal = query.first()
         if principal is None:
             # XXX: Should we cache a negative result?
@@ -645,7 +647,6 @@ class Plugin(BasePlugin, Cacheable):
                     isinstance(value, datetime.date):
                 value = DateTime(value.isoformat())
             data[zope_attr] = value
-
         if data:
             self.ZCacheable_set(data, view_name=view_name)
             data.pop('id', None)
