@@ -193,6 +193,6 @@ class Group(Principal):
     ]
 
     def __repr__(self):
-        return ("<Group id=%d name=%s>" % (
+        return ("<Group id=%s name=%s>" % (
             str(self.id), self.zope_id)
         ).encode('utf-8')
