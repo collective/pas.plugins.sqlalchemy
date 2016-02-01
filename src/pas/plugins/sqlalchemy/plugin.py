@@ -845,8 +845,6 @@ class Plugin(BasePlugin, Cacheable):
             if not principal:
                 return False
             principal = self._add_principal(zope_id=principal.getId())
-            #principal = session.query(self.principal_class)\
-            #    .filter_by(zope_id=principal_id).first()
 
         group.members.append(principal)
         return True
@@ -887,11 +885,12 @@ class Plugin(BasePlugin, Cacheable):
 
         group.members.remove(user)
 
-        # If user doesn't belongs to this PAS plugin, garbage can be left behind
+        # If user doesn't belongs to this plugin, garbage can be left behind
         # in that case we can have orphan items in the principals table
-        full_user = session.query(self.user_class).filter_by(id=user.id).first()
+        full_user = session.query(self.user_class).filter_by(id=user.id)\
+            .first()
         relations_left = session.query(model.group_member_table).filter(
-            model.group_member_table.c.principal_id==user.id
+            model.group_member_table.c.principal_id == user.id
             ).count()
         if not full_user and relations_left == 0:
             session.query(self.principal_class).filter_by(id=user.id)\
