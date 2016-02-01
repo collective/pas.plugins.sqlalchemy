@@ -4,6 +4,9 @@ Changelog
 0.4 (unreleased)
 ------------------
 
+- fixed the manual creation of a PAS plugin instance from ZMI interface
+  [keul]
+
 - the PAS plugin now can be used only as *group provider*.
   This means that you can now add users from other PAS plugins to SQL groups.
   This is (for now?) limited to *users*: you can't add external groups to sql

@@ -17,6 +17,7 @@ def initialize(context):
                 permission=add_user_folders,
                 icon=os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                                   'www', 'sql.png'),
-                constructors=(plugin.manage_addSqlalchemyPlugin,),
+                constructors=(plugin.manage_addSqlalchemyPluginForm,
+                              plugin.addSqlalchemyPlugin),
                 visibility=None
             )
