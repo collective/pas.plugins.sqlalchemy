@@ -4,6 +4,10 @@ Changelog
 0.4 (unreleased)
 ------------------
 
+- provided an optional ``setup`` script to be run on z3c.saconfig
+  initialization.
+  [keul]
+
 - properly plugin initialization, with custom icon
   [keul]
 
