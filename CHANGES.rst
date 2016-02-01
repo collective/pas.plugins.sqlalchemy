@@ -26,6 +26,10 @@ Changelog
 
 - added link to cache settings view in zmi
   [agitator]
+- provided an optional ``setup`` script to be run on z3c.saconfig
+  initialization.
+  [keul]
+
 - properly plugin initialization, with custom icon
   [keul]
 
