@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from pas.plugins.sqlalchemy.setuphandlers import plugin_name
-from Products.PlonePAS.Extensions import Install as ppasinstall
+from Products.PlonePAS.setuphandlers import registerPluginTypes
 from Testing import ZopeTestCase
 from z3c.saconfig import EngineFactory
 from z3c.saconfig import GloballyScopedSession
@@ -90,7 +90,7 @@ class SQLLayer(object):
         factory = container.manage_addProduct['PluggableAuthService']
         factory.addPluggableAuthService(REQUEST=None)
         pas = container.acl_users
-        ppasinstall.registerPluginTypes(pas)
+        registerPluginTypes(pas)
         from pas.plugins.sqlalchemy import setuphandlers
         setuphandlers.install_pas_plugin(container)
         return pas
