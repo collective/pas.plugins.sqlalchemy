@@ -26,6 +26,8 @@ Changelog
 
 - added link to cache settings view in zmi
   [agitator]
+- properly plugin initialization, with custom icon
+  [keul]
 
 - fix: ``getPropertiesForUser`` uses principals ``_properties`` mapping now
   to map to the column used for ``zope_id`` id this is needed.
