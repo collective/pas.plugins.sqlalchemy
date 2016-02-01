@@ -4,6 +4,9 @@ Changelog
 0.4 (unreleased)
 ------------------
 
+- properly plugin initialization, with custom icon
+  [keul]
+
 - fix: ``getPropertiesForUser`` uses principals ``_properties`` mapping now
   to map to the column used for ``zope_id`` id this is needed.
   [jensens]
