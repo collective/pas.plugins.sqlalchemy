@@ -26,6 +26,12 @@ Changelog
 
 - added link to cache settings view in zmi
   [agitator]
+- now require Products.PlonePAS >= 5.0.4.
+  This is not the (current) version proposed by Plone 4.3, but is the version
+  suggested by plone4.csrffixes hotfix, so probably all Plone 4.3 must move
+  to this version in any case.
+  [keul]
+
 - fixed the manual creation of a PAS plugin instance from ZMI interface
   [keul]
 

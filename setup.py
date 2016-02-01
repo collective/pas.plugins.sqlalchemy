@@ -14,6 +14,7 @@ requires = [
     'SQLAlchemy',
     'z3c.saconfig',
     'zope.sqlalchemy',
+    'Products.PlonePAS>=5.0.1',
     ]
 
 tests_requires = requires + ['pysqlite', ]
