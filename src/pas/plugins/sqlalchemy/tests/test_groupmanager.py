@@ -1,9 +1,12 @@
 # -*- coding: utf-8 -*-
 # tests from sqlpasplugin ( GPL v2 )
 
-from pas.plugins.sqlalchemy.tests import basetestcase
 from pas.plugins.sqlalchemy.setuphandlers import plugin_name
+from pas.plugins.sqlalchemy.tests import basetestcase
+from Products.CMFCore.utils import getToolByName
 from Products.PlonePAS.plugins.group import PloneGroup
+from Products.PlonePAS.setuphandlers import activatePluginInterfaces
+from Products.PlonePAS.setuphandlers import setupAuthPlugins
 
 
 class TestGroupManager(basetestcase.BaseTestCase):
@@ -78,6 +81,47 @@ class TestGroupManager(basetestcase.BaseTestCase):
 
         # Cleanup
         self.source_users.removeUser(self.username)
+        self.source_groups.removeGroup(self.groupname)
+
+    def testMembershipLifecycleWithPloneUser(self):
+        # Create Group
+        self.source_groups.addGroup(self.groupname)
+        ret = self.source_groups.enumerateGroups(
+            id=self.groupname, exact_match=True)
+        self.assertEqual(len(ret), 1)
+
+        sandbox = self.app.sandbox
+        acl_users = getToolByName(sandbox, 'acl_users')
+        pas = acl_users.manage_addProduct['PluggableAuthService']
+        plone_pas = acl_users.manage_addProduct['PlonePAS']
+        setupAuthPlugins(sandbox, pas, plone_pas)
+        plone_pas.manage_addUserManager('source_users')
+        activatePluginInterfaces(sandbox, 'source_users')
+        plone_users = sandbox.acl_users.source_users
+
+        # Create User (on Plone's acl)
+        plone_users.doAddUser(self.username, self.password)
+        ret = plone_users.enumerateUsers(id=self.username, exact_match=True)
+        self.assertEqual(len(ret), 1)
+
+        # User should have no memberships
+        ret = self.source_groups.getGroupsForPrincipal(self.username)
+        self.assertEqual(len(ret), 0, "Database seems unclean")
+
+        # Add the user to the group
+        self.source_groups.addPrincipalToGroup(self.username, self.groupname)
+        ret = self.source_groups.getGroupsForPrincipal(self.username)
+        self.assertEqual(len(ret), 1, "Failed to add user to group")
+        self.assertEqual(ret[0], self.groupname)
+
+        # Remove the user from the group
+        self.source_groups.removePrincipalFromGroup(self.username,
+                                                    self.groupname)
+        ret = self.source_groups.getGroupsForPrincipal(self.username)
+        self.assertEqual(len(ret), 0, "Failed to remove user from group")
+
+        # Cleanup
+        plone_users.removeUser(self.username)
         self.source_groups.removeGroup(self.groupname)
 
     def testEnumerateGroups(self):

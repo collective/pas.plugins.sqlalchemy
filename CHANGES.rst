@@ -26,6 +26,12 @@ Changelog
 
 - added link to cache settings view in zmi
   [agitator]
+- the PAS plugin now can be used only as *group provider*.
+  This means that you can now add users from other PAS plugins to SQL groups.
+  This is (for now?) limited to *users*: you can't add external groups to sql
+  groups.
+  [keul]
+
 - provided an optional ``setup`` script to be run on z3c.saconfig
   initialization.
   [keul]
