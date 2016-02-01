@@ -42,7 +42,7 @@ Session = named_scoped_session("pas.plugins.sqlalchemy")
 
 logger = logging.getLogger("pas.plugins.sqlalchemy")
 
-manage_addSqlalchemyPlugin = PageTemplateFile(
+manage_addSqlalchemyPluginForm = PageTemplateFile(
     "templates/addPlugin",
     globals(),
     __name__="manage_addPlugin"
