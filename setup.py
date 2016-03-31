@@ -20,7 +20,7 @@ tests_requires = requires + ['pysqlite']
 
 setup(
     name='pas.plugins.sqlalchemy',
-    version='0.4.dev0',
+    version='0.4',
     description="SQLAlchemy-based PAS user/group/prop store.",
     long_description=read("README.rst") + '\n\n' + read("CHANGES.rst"),
     classifiers=[

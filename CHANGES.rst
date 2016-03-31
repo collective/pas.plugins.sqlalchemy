@@ -1,8 +1,8 @@
 Changelog
 =========
 
-0.4 (unreleased)
-------------------
+0.4 (2016-03-31)
+----------------
 
 - added link to cache settings view in zmi
   [agitator]
