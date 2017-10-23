@@ -1,11 +1,13 @@
 Changelog
 =========
 
-0.5 (unreleased)
------------------
+0.4.2 (2017-10-23)
+------------------
 
 - MANIFEST was not fixed in version 0.4.1 (still a brown bag release)
   [keul]
+- Fixed brown bag release (again).
+  [malthe]
 
 0.4.1 (2017-10-23)
 ------------------
