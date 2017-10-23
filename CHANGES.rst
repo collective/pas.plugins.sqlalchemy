@@ -4,7 +4,8 @@ Changelog
 0.5 (unreleased)
 -----------------
 
--
+- MANIFEST was not fixed in version 0.4.1 (still a brown bag release)
+  [keul]
 
 0.4.1 (2017-10-23)
 ------------------

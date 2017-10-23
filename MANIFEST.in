@@ -1,4 +1,4 @@
 include *.rst *.in
-graft pas
+graft src 
 graft docs
 global-exclude *pyc
