@@ -1,11 +1,11 @@
 Changelog
 =========
 
-0.5 (unreleased)
-----------------
+0.4.1 (2017-10-23)
+------------------
 
-- Nothing changed yet.
-
+- Fixed brown bag release.
+  [malthe]
 
 0.4 (2016-03-31)
 ----------------
