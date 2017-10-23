@@ -178,6 +178,7 @@ class MutablePropertySheet(UserPropertySheet):
 class Plugin(BasePlugin, Cacheable):
     meta_type = 'SQLAlchemy user/group/prop manager'
     security = ClassSecurityInfo()
+    manage_options = BasePlugin.manage_options + Cacheable.manage_options
 
     _properties = BasePlugin._properties + (
         {'id': 'user_model',

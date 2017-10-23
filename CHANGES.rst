@@ -1,8 +1,8 @@
 Changelog
 =========
 
-0.4 (unreleased)
-------------------
+0.5 (unreleased)
+-----------------
 
 - now require Products.PlonePAS >= 5.0.4.
   This is not the (current) version proposed by Plone 4.3, but is the version
@@ -25,6 +25,18 @@ Changelog
 
 - properly plugin initialization, with custom icon
   [keul]
+
+0.4.1 (2017-10-23)
+------------------
+
+- Fixed brown bag release.
+  [malthe]
+
+0.4 (2016-03-31)
+----------------
+
+- added link to cache settings view in zmi
+  [agitator]
 
 - fix: ``getPropertiesForUser`` uses principals ``_properties`` mapping now
   to map to the column used for ``zope_id`` id this is needed.

@@ -72,6 +72,8 @@ following content::
        />
   </connections>
 
+For good performance, don't forget to enable caching within the ZMI.
+
 More information is available in the package description.
 
 
