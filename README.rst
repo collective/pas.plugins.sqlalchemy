@@ -39,6 +39,14 @@ Example::
 
   </configure>
 
+If you are connecting to a new database and want to bootstrap a default tables structure you can let the configuration to run a provided setup simply changing the ``engine`` aboventry e as follow::
+
+    ...
+    <engine name="pas"
+            url="url="postgresql://localhost/pas""
+            setup="pas.plugins.sqlalchemy.setup_db.prepare" />
+    ...
+
 Install the plugin using the included GenericSetup-profile.
 Note that tables will be created automatically on installation.
 

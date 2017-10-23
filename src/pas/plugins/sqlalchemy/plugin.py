@@ -42,7 +42,7 @@ Session = named_scoped_session("pas.plugins.sqlalchemy")
 
 logger = logging.getLogger("pas.plugins.sqlalchemy")
 
-manage_addSqlalchemyPlugin = PageTemplateFile(
+manage_addSqlalchemyPluginForm = PageTemplateFile(
     "templates/addPlugin",
     globals(),
     __name__="manage_addPlugin"
@@ -632,6 +632,15 @@ class Plugin(BasePlugin, Cacheable):
             'zope_id'   # if not mapped fall back to 'zope_id'
         )
         filter_data = {column_name: user.getId()}
+
+        # Be sure that, if it's a real user, it belongs to this plugin
+        if not isGroup:
+            is_external_user = session.query(self.user_class).filter_by(
+                **filter_data
+            ).count() == 0
+            if is_external_user:
+                return None
+
         query = session.query(self.principal_class).filter_by(**filter_data)
         principal = query.first()
         if principal is None:
@@ -829,7 +838,13 @@ class Plugin(BasePlugin, Cacheable):
             .filter_by(zope_id=principal_id).first()
 
         if principal is None:
-            return False
+            # Last chance:
+            # maybe we are trying to add a users not handled by this plugin?
+            acl_users = getToolByName(self, 'acl_users')
+            principal = acl_users.getUser(principal_id)
+            if not principal:
+                return False
+            principal = self._add_principal(zope_id=principal.getId())
 
         group.members.append(principal)
         return True
@@ -869,6 +884,17 @@ class Plugin(BasePlugin, Cacheable):
             return False
 
         group.members.remove(user)
+
+        # If user doesn't belongs to this plugin, garbage can be left behind
+        # in that case we can have orphan items in the principals table
+        full_user = session.query(self.user_class).filter_by(id=user.id)\
+            .first()
+        relations_left = session.query(model.group_member_table).filter(
+            model.group_member_table.c.principal_id == user.id
+            ).count()
+        if not full_user and relations_left == 0:
+            session.query(self.principal_class).filter_by(id=user.id)\
+                .delete()
         return True
 
     @security.private
@@ -1004,6 +1030,12 @@ class Plugin(BasePlugin, Cacheable):
     def addRole(self, role_id, title='', description=''):
         # We do not manage roles.
         raise AttributeError
+
+    def _add_principal(self, zope_id, type="user"):
+        session = Session()
+        new_principal = self.principal_class(type=type, zope_id=zope_id)
+        session.add(new_principal)
+        return new_principal
 
     def _get_groups_for_principal_from_pas(self, principal):
         plugins = self._getPAS()._getOb('plugins')

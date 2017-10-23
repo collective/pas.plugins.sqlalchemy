@@ -4,7 +4,27 @@ Changelog
 0.5 (unreleased)
 -----------------
 
--
+- now require Products.PlonePAS >= 5.0.4.
+  This is not the (current) version proposed by Plone 4.3, but is the version
+  suggested by plone4.csrffixes hotfix, so probably all Plone 4.3 must move
+  to this version in any case.
+  [keul]
+
+- fixed the manual creation of a PAS plugin instance from ZMI interface
+  [keul]
+
+- the PAS plugin now can be used only as *group provider*.
+  This means that you can now add users from other PAS plugins to SQL groups.
+  This is (for now?) limited to *users*: you can't add external groups to sql
+  groups.
+  [keul]
+
+- provided an optional ``setup`` script to be run on z3c.saconfig
+  initialization.
+  [keul]
+
+- properly plugin initialization, with custom icon
+  [keul]
 
 
 0.4.2 (2017-10-23)
@@ -26,6 +46,27 @@ Changelog
 
 - added link to cache settings view in zmi
   [agitator]
+- now require Products.PlonePAS >= 5.0.4.
+  This is not the (current) version proposed by Plone 4.3, but is the version
+  suggested by plone4.csrffixes hotfix, so probably all Plone 4.3 must move
+  to this version in any case.
+  [keul]
+
+- fixed the manual creation of a PAS plugin instance from ZMI interface
+  [keul]
+
+- the PAS plugin now can be used only as *group provider*.
+  This means that you can now add users from other PAS plugins to SQL groups.
+  This is (for now?) limited to *users*: you can't add external groups to sql
+  groups.
+  [keul]
+
+- provided an optional ``setup`` script to be run on z3c.saconfig
+  initialization.
+  [keul]
+
+- properly plugin initialization, with custom icon
+  [keul]
 
 - fix: ``getPropertiesForUser`` uses principals ``_properties`` mapping now
   to map to the column used for ``zope_id`` id this is needed.

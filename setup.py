@@ -14,9 +14,10 @@ requires = [
     'SQLAlchemy',
     'z3c.saconfig',
     'zope.sqlalchemy',
+    'Products.PlonePAS>=5.0.1',
     ]
 
-tests_requires = requires + ['pysqlite']
+tests_requires = requires + ['pysqlite', ]
 
 setup(
     name='pas.plugins.sqlalchemy',
@@ -26,6 +27,9 @@ setup(
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Intended Audience :: Developers",
+        "Framework :: Zope2",
+        "Framework :: Plone",
+        "Framework :: Plone :: 4.3",
         "Programming Language :: Python",
         "Topic :: Internet :: WWW/HTTP",
         "Topic :: Internet :: WWW/HTTP :: WSGI",
