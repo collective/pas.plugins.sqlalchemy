@@ -9,7 +9,7 @@ def read(*rnames):
 
 requires = [
     'DateTime>=2.11',
-    'Products.CMFPlone',
+    'Plone',
     'setuptools',
     'SQLAlchemy',
     'z3c.saconfig',
