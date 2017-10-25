@@ -9,7 +9,7 @@ def read(*rnames):
 
 requires = [
     'DateTime>=2.11',
-    'Plone',
+    'Products.CMFPlone',
     'setuptools',
     'SQLAlchemy',
     'z3c.saconfig',
@@ -21,15 +21,16 @@ tests_requires = requires + ['pysqlite', ]
 
 setup(
     name='pas.plugins.sqlalchemy',
-    version='0.5-dev',
-    description="SQLAlchemy-based PAS user/group/prop store.",
+    version='0.5.dev0',
+    description="Plone SQLAlchemy-based PAS user/group/prop store.",
     long_description=read("README.rst") + '\n\n' + read("CHANGES.rst"),
     classifiers=[
-        "Development Status :: 3 - Alpha",
+        "Development Status :: 4 - Beta",
         "Intended Audience :: Developers",
         "Framework :: Zope2",
         "Framework :: Plone",
         "Framework :: Plone :: 4.3",
+        "Framework :: Plone :: 5.0",
         "Programming Language :: Python",
         "Topic :: Internet :: WWW/HTTP",
         "Topic :: Internet :: WWW/HTTP :: WSGI",
@@ -37,6 +38,7 @@ setup(
     ],
     author='Malthe Borch and Stefan Eletzhofer',
     author_email="product-developers@lists.plone.org",
+    url='https://github.com/collective/pas.plugins.sqlalchemy',
     license="GNU GPL v2",
     keywords='web pas plone',
     package_dir={'': 'src'},
