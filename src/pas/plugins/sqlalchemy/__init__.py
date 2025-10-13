@@ -2,7 +2,7 @@
 from Products.PluggableAuthService.PluggableAuthService import MultiPlugins
 from Products.PluggableAuthService.PluggableAuthService import \
     registerMultiPlugin
-import plugin
+from pas.plugins.sqlalchemy import plugin
 from AccessControl.Permissions import add_user_folders
 import os
 

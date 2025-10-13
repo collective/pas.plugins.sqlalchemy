@@ -3,7 +3,7 @@ from AccessControl import ClassSecurityInfo
 from AccessControl.SecurityManagement import getSecurityManager
 from Acquisition import aq_get
 from DateTime import DateTime
-from Globals import InitializeClass
+from AccessControl.class_init import InitializeClass
 from OFS.Cache import Cacheable
 from pas.plugins.sqlalchemy import model
 from Products.CMFCore.utils import getToolByName
@@ -28,7 +28,8 @@ from Products.PluggableAuthService.UserPropertySheet import UserPropertySheet
 from Products.PluggableAuthService.utils import createViewName
 from sqlalchemy import sql
 from z3c.saconfig import named_scoped_session
-from zope.component.interfaces import ComponentLookupError
+from zope.interface.interfaces import ComponentLookupError
+
 from zope.dottedname.resolve import resolve
 from zope.event import notify
 from zope.interface import implementer

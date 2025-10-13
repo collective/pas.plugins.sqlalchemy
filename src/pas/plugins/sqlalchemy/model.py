@@ -33,7 +33,7 @@ from sqlalchemy import Text
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.ext.declarative import synonym_for
-from sqlalchemy.orm import relation
+from sqlalchemy.orm import relationship as relation
 from sqlalchemy.sql import functions
 from zope.interface import implementer
 import random
