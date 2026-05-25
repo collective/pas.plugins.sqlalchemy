@@ -44,14 +44,19 @@ Session = named_scoped_session("pas.plugins.sqlalchemy")
 logger = logging.getLogger("pas.plugins.sqlalchemy")
 
 manage_addSqlalchemyPluginForm = PageTemplateFile(
-    "templates/addPlugin",
-    globals(),
-    __name__="manage_addPlugin"
+    "templates/addPlugin", globals(), __name__="manage_addPlugin"
 )
 
 
-def addSqlalchemyPlugin(self, id, title="", user_model=None,
-                        principal_model=None, group_model=None, REQUEST=None):
+def addSqlalchemyPlugin(
+    self,
+    id,
+    title="",
+    user_model=None,
+    principal_model=None,
+    group_model=None,
+    REQUEST=None,
+):
     """Add an SQLAlchemy plugin to a PAS."""
     p = Plugin(id, title)
     p.user_model = user_model
@@ -66,19 +71,18 @@ def addSqlalchemyPlugin(self, id, title="", user_model=None,
         )
 
 
+from plone.base.utils import safe_text, safe_bytes
+
+
 def safeencode(v):
-    if isinstance(v, unicode):
-        return v.encode('utf-8')
-    return v
+    return safe_bytes(v)
 
 
 def safedecode(v):
-    if isinstance(v, str):
-        return v.decode('utf-8')
-    return v
+    return safe_text(v)
 
 
-_V_ERROR_MARKER = '_v_pas.plugins.sqlalchemy_errored'
+_V_ERROR_MARKER = "_v_pas.plugins.sqlalchemy_errored"
 
 
 def graceful_recovery(default=None, log_args=True):
@@ -116,16 +120,25 @@ def graceful_recovery(default=None, log_args=True):
 
                 logger.critical(
                     "caught SQL-exception: "
-                    "%s (in method ``%s``; arguments were %s)\n\n%s" % (
+                    "%s (in method ``%s``; arguments were %s)\n\n%s"
+                    % (
                         exc_str,
-                        func.__name__, ", ".join(
-                            [repr(arg) for arg in args] +
-                            ["%s=%s" % (name, repr(value))
-                             for (name, value) in kwargs.items()]
-                        ), formatted_tb))
+                        func.__name__,
+                        ", ".join(
+                            [repr(arg) for arg in args]
+                            + [
+                                "%s=%s" % (name, repr(value))
+                                for (name, value) in kwargs.items()
+                            ]
+                        ),
+                        formatted_tb,
+                    )
+                )
                 return default
             return value
+
         return wrapper
+
     return decorator
 
 
@@ -174,37 +187,41 @@ class MutablePropertySheet(UserPropertySheet):
     pasplugins.IGroupsPlugin,
     pasplugins.IGroupEnumerationPlugin,
     IGroupIntrospection,
-    IGroupManagement
+    IGroupManagement,
 )
 class Plugin(BasePlugin, Cacheable):
-    meta_type = 'SQLAlchemy user/group/prop manager'
+    meta_type = "SQLAlchemy user/group/prop manager"
     security = ClassSecurityInfo()
     manage_options = BasePlugin.manage_options + Cacheable.manage_options
 
     _properties = BasePlugin._properties + (
-        {'id': 'user_model',
-         'label': 'SQLAlchemy User model (dotted path)',
-         'type': 'string',
-         'mode': 'w',
-         },
-        {'id': 'principal_model',
-         'label': 'SQLAlchemy Principal model (dotted path)',
-         'type': 'string',
-         'mode': 'w',
-         },
-        {'id': 'group_model',
-         'label': 'SQLAlchemy Group model (dotted path)',
-         'type': 'string',
-         'mode': 'w',
-         }
+        {
+            "id": "user_model",
+            "label": "SQLAlchemy User model (dotted path)",
+            "type": "string",
+            "mode": "w",
+        },
+        {
+            "id": "principal_model",
+            "label": "SQLAlchemy Principal model (dotted path)",
+            "type": "string",
+            "mode": "w",
+        },
+        {
+            "id": "group_model",
+            "label": "SQLAlchemy Group model (dotted path)",
+            "type": "string",
+            "mode": "w",
+        },
     )
 
     user_model = "pas.plugins.sqlalchemy.model.User"
     principal_model = "pas.plugins.sqlalchemy.model.Principal"
     group_model = "pas.plugins.sqlalchemy.model.Group"
 
-    def __init__(self, id, title=None, user_model=None,
-                 principal_model=None, group_model=None):
+    def __init__(
+        self, id, title=None, user_model=None, principal_model=None, group_model=None
+    ):
         self.id = self.id = id
         self.title = title
         if user_model:
@@ -264,9 +281,7 @@ class Plugin(BasePlugin, Cacheable):
         query = session.query(self.user_class).filter_by(zope_id=principal_id)
         user = query.first()
         if user is None:
-            raise RuntimeError(
-                "User does not exist: zope_id=%s" % principal_id
-            )
+            raise RuntimeError("User does not exist: zope_id=%s" % principal_id)
         user.set_password(password)
 
     @security.private
@@ -296,8 +311,8 @@ class Plugin(BasePlugin, Cacheable):
     @security.private
     @graceful_recovery(log_args=False)
     def authenticateCredentials(self, credentials):
-        login = credentials.get('login')
-        password = credentials.get('password')
+        login = credentials.get("login")
+        password = credentials.get("password")
 
         if not login or not password:
             return None
@@ -312,42 +327,44 @@ class Plugin(BasePlugin, Cacheable):
     # IUserEnumerationPlugin implementation
     #
     def _enumerate(self, cls, exact_match, sort_by, max_results, criteria):
-        """Helper method for enumerateUsers and enumerateGroups.
-        """
+        """Helper method for enumerateUsers and enumerateGroups."""
 
         if exact_match and not ("login" in criteria or "id" in criteria):
             return ()
 
         view_name = createViewName(
-            'enumerate%s' % cls.__name__,
-            criteria.get("id", None) or criteria.get("login", None)
+            "enumerate%s" % cls.__name__,
+            criteria.get("id", None) or criteria.get("login", None),
         )
         cachekey = {
-            '_exact_match': exact_match,
-            '_sort_by': sort_by,
-            '_max_results': max_results,
+            "_exact_match": exact_match,
+            "_sort_by": sort_by,
+            "_max_results": max_results,
         }
         cachekey.update(criteria)
 
-        cached_info = self.ZCacheable_get(
-            view_name=view_name, keywords=cachekey)
+        cached_info = self.ZCacheable_get(view_name=view_name, keywords=cachekey)
         if cached_info is not None:
             return cached_info
 
         def clause(column, value):
-            if exact_match or not isinstance(value, basestring):
-                return (column == value)
+            # if exact_match or not isinstance(value, basestring):
+            #     return column == value
+            # elif isinstance(value, str):
+            #     return column.ilike("%%%s%%" % value)
+            # elif isinstance(value, unicode):
+            #     return column.ilike("%%%s%%" % value)
+            if exact_match or not isinstance(value, str):
+                return column == value
             elif isinstance(value, str):
                 return column.ilike("%%%s%%" % value)
-            elif isinstance(value, unicode):
-                return column.ilike(u"%%%s%%" % value)
-            return (column == v)
+            return column == v
 
         session = Session()
         query = session.query(cls)
 
         propmap = dict(cls._properties)
-        for (term, value) in criteria.items():
+        for term, value in criteria.items():
             column = getattr(cls, propmap[term])
             if not (isinstance(value, list) or isinstance(value, tuple)):
                 query = query.filter(clause(column, value))
@@ -363,8 +380,7 @@ class Plugin(BasePlugin, Cacheable):
         all = {}
         for user in query:
             user_id = user.zope_id
-            data = dict(id=safeencode(user_id),
-                        pluginid=self.getId())
+            data = dict(id=user_id, pluginid=self.getId())
             if "login" in propmap:
                 data["login"] = user.login
             all[user_id] = data.setdefault(user_id, data)
@@ -377,8 +393,15 @@ class Plugin(BasePlugin, Cacheable):
 
     @security.private
     @graceful_recovery(())
-    def enumerateUsers(self, id=None, login=None, exact_match=False,
-                       sort_by=None, max_results=None, **kw):
+    def enumerateUsers(
+        self,
+        id=None,
+        login=None,
+        exact_match=False,
+        sort_by=None,
+        max_results=None,
+        **kw
+    ):
         """See IUserEnumerationPlugin."""
 
         if exact_match and not (login or id):
@@ -389,9 +412,7 @@ class Plugin(BasePlugin, Cacheable):
         if login:
             kw["login"] = login
 
-        return self._enumerate(
-            self.user_class, exact_match, sort_by, max_results, kw
-        )
+        return self._enumerate(self.user_class, exact_match, sort_by, max_results, kw)
 
     #
     # IUserAdderPlugin implementation
@@ -405,7 +426,7 @@ class Plugin(BasePlugin, Cacheable):
         return True
 
     @security.private
-    @graceful_recovery(log_args=False)
+    # @graceful_recovery(log_args=False)
     def addUser(self, user_id, login_name, password):
         session = Session()
         new_user = self.user_class(zope_id=user_id, login=login_name)
@@ -442,7 +463,7 @@ class Plugin(BasePlugin, Cacheable):
 
     @security.protected(ManageUsers)
     def removeRoleFromPrincipal(self, role_id, principal_id):
-        """ Remove a role from a principal (user or group).
+        """Remove a role from a principal (user or group).
 
         o Return a boolean indicating whether the role was already present.
 
@@ -456,7 +477,7 @@ class Plugin(BasePlugin, Cacheable):
             self.doRemoveRolesFromPrincipal([role_id], principal_id)
 
             view_name = createViewName(
-                'getRolesForPrincipal-IgnDirFalse-IgnGrpFalse', principal_id
+                "getRolesForPrincipal-IgnDirFalse-IgnGrpFalse", principal_id
             )
             self.ZCacheable_invalidate(view_name)
             return True
@@ -478,34 +499,30 @@ class Plugin(BasePlugin, Cacheable):
         o insert and delete roles on the SQL Backend based on the roles
           parameter
         """
-        ignored_roles = ('Authenticated', 'Anonymous', 'Owner')
+        ignored_roles = ("Authenticated", "Anonymous", "Owner")
         roles = [role_id for role_id in roles if role_id not in ignored_roles]
 
         # remove actual roles that are not in the roles parameter
-        actual_roles = self.getRolesForPrincipal(
-            principal_id, ignore_groups=True
-        )
+        actual_roles = self.getRolesForPrincipal(principal_id, ignore_groups=True)
 
         self.doRemoveRolesFromPrincipal(
-            [role for role in actual_roles if role not in roles], principal_id)
+            [role for role in actual_roles if role not in roles], principal_id
+        )
 
         # insert new roles
         for role in roles:
             if role not in ignored_roles:
-                self.doAssignRoleToPrincipal(
-                    principal_id, role, invalidate_cache=False
-                )
+                self.doAssignRoleToPrincipal(principal_id, role, invalidate_cache=False)
 
         view_name = createViewName(
-            'getRolesForPrincipal-IgnDirFalse-IgnGrpFalse', principal_id
+            "getRolesForPrincipal-IgnDirFalse-IgnGrpFalse", principal_id
         )
 
         self.ZCacheable_invalidate(view_name)
 
     @security.private
-    def doAssignRoleToPrincipal(
-            self, principal_id, role, invalidate_cache=True):
-        """ Create a principal/role association in a Role Manager
+    def doAssignRoleToPrincipal(self, principal_id, role, invalidate_cache=True):
+        """Create a principal/role association in a Role Manager
 
         o Return a Boolean indicating whether the role was assigned or not
         """
@@ -518,7 +535,7 @@ class Plugin(BasePlugin, Cacheable):
 
         if invalidate_cache:
             view_name = createViewName(
-                'getRolesForPrincipal-IgnDirFalse-IgnGrpFalse', principal_id
+                "getRolesForPrincipal-IgnDirFalse-IgnGrpFalse", principal_id
             )
             self.ZCacheable_invalidate(view_name)
 
@@ -526,9 +543,8 @@ class Plugin(BasePlugin, Cacheable):
 
     @security.private
     @graceful_recovery(())
-    def getRolesForPrincipal(
-            self, principal, request=None, ignore_groups=False):
-        """ principal -> ( role_1, ... role_N )
+    def getRolesForPrincipal(self, principal, request=None, ignore_groups=False):
+        """principal -> ( role_1, ... role_N )
 
         o Return a sequence of role names which the principal has.
 
@@ -538,7 +554,7 @@ class Plugin(BasePlugin, Cacheable):
         roles = set([])
         principal_ids = set([])
 
-        if isinstance(principal, basestring):
+        if isinstance(principal, str):
             # This is an extension to the official PAS plugin for internal use.
             principal_id = principal
         else:
@@ -548,12 +564,12 @@ class Plugin(BasePlugin, Cacheable):
         # Products.PlonePAS.plugins.roles.getRolesForPrincipal. Don't
         # like it!
 
-        request = aq_get(self, 'REQUEST', None)
+        request = aq_get(self, "REQUEST", None)
         # Some services need to determine the roles obtained from groups
         # while excluding the directly assigned roles.  In this case
         # '__ignore_direct_roles__' = True should be pushed in the request.
         __ignore_direct_roles__ = request and request.get(
-            '__ignore_direct_roles__', False
+            "__ignore_direct_roles__", False
         )
 
         # Some services may need the real roles of an user but **not**
@@ -561,12 +577,12 @@ class Plugin(BasePlugin, Cacheable):
         # '__ignore_group_roles__'= True should be previously pushed
         # in the request.
         __ignore_group_roles__ = (
-            request and request.get('__ignore_group_roles__', False)
+            request and request.get("__ignore_group_roles__", False)
         ) or ignore_groups
 
-        method_name = 'getRolesForPrincipal-IgnDir%s-IgnGrp%s' % (
+        method_name = "getRolesForPrincipal-IgnDir%s-IgnGrp%s" % (
             str(__ignore_direct_roles__),
-            str(__ignore_group_roles__)
+            str(__ignore_group_roles__),
         )
 
         view_name = createViewName(method_name, principal_id)
@@ -600,7 +616,7 @@ class Plugin(BasePlugin, Cacheable):
     def _getSchema(self, isgroup=None):
         # this could probably stand to be cached
         datatool = isgroup and "portal_groupdata" or "portal_memberdata"
-        schema = getattr(self, '_schema', None)
+        schema = getattr(self, "_schema", None)
         if not schema:
             # if no schema is provided, use portal_memberdata properties
             schema = ()
@@ -608,7 +624,7 @@ class Plugin(BasePlugin, Cacheable):
             # Don't fail badly if tool is not available.
             if mdtool is not None:
                 mdschema = mdtool.propertyMap()
-                schema = [(elt['id'], elt['type']) for elt in mdschema]
+                schema = [(elt["id"], elt["type"]) for elt in mdschema]
         return schema
 
     @security.private
@@ -617,28 +633,25 @@ class Plugin(BasePlugin, Cacheable):
         """Get property values for a user or group.
         Returns a dictionary of values or a PropertySheet.
         """
-        isGroup = getattr(user, 'isGroup', lambda: None)()
+        isGroup = getattr(user, "isGroup", lambda: None)()
 
-        view_name = createViewName('getPropertiesForUser', user.getId())
+        view_name = createViewName("getPropertiesForUser", user.getId())
         cached_info = self.ZCacheable_get(view_name=view_name)
         schema = self._getSchema(isGroup) or None
         if cached_info is not None:
-            return MutablePropertySheet(
-                self, schema=schema, **cached_info
-            )
+            return MutablePropertySheet(self, schema=schema, **cached_info)
 
         session = Session()
         column_name = dict(self.principal_class._properties).get(
-            'zope_id',  # map zope_id
-            'zope_id'   # if not mapped fall back to 'zope_id'
+            "zope_id", "zope_id"  # map zope_id  # if not mapped fall back to 'zope_id'
         )
         filter_data = {column_name: user.getId()}
 
         # Be sure that, if it's a real user, it belongs to this plugin
         if not isGroup:
-            is_external_user = session.query(self.user_class).filter_by(
-                **filter_data
-            ).count() == 0
+            is_external_user = (
+                session.query(self.user_class).filter_by(**filter_data).count() == 0
+            )
             if is_external_user:
                 return None
 
@@ -651,16 +664,15 @@ class Plugin(BasePlugin, Cacheable):
             return None
 
         data = {}
-        for (zope_attr, sql_attr) in principal._properties:
+        for zope_attr, sql_attr in principal._properties:
             value = getattr(principal, sql_attr)
 
-            if isinstance(value, datetime.datetime) or \
-                    isinstance(value, datetime.date):
+            if isinstance(value, datetime.datetime) or isinstance(value, datetime.date):
                 value = DateTime(value.isoformat())
             data[zope_attr] = value
         if data:
             self.ZCacheable_set(data, view_name=view_name)
-            data.pop('id', None)
+            data.pop("id", None)
             return MutablePropertySheet(self, schema=schema, **data)
 
     @security.private
@@ -681,11 +693,11 @@ class Plugin(BasePlugin, Cacheable):
         # if value is a string, make sure it does not exceed the limit
         # (truncate if necessary--this is better than breaking the
         # application)
-        if isinstance(value, basestring):
-            value = safedecode(value)
+        if isinstance(value, str):
+            # value = safedecode(value)
             cspec = getattr(principal.__mapper__.columns, sql_attr).type
             if isinstance(cspec, rdb.String):
-                value = value[:cspec.length]
+                value = value[: cspec.length]
         setattr(principal, sql_attr, value)
 
     @security.private
@@ -710,7 +722,7 @@ class Plugin(BasePlugin, Cacheable):
         # XXX: This event is not fired by PAS!
         notify(event)
 
-        view_name = createViewName('getPropertiesForUser', user)
+        view_name = createViewName("getPropertiesForUser", user)
         self.ZCacheable_invalidate(view_name=view_name)
 
     #
@@ -720,7 +732,7 @@ class Plugin(BasePlugin, Cacheable):
     @security.private
     @graceful_recovery(())
     def getGroupsForPrincipal(self, principal, request=None):
-        """ principal -> ( group_1, ... group_N )
+        """principal -> ( group_1, ... group_N )
 
         o Return a sequence of group names to which the principal
           (either a user or another group) belongs.
@@ -728,14 +740,15 @@ class Plugin(BasePlugin, Cacheable):
         o May assign groups based on values in the REQUEST object, if present
         """
 
-        if isinstance(principal, basestring):
+        if isinstance(principal, str):
             principal_id = principal
         else:
             principal_id = principal.getId()
 
         session = Session()
-        principal = session.query(self.principal_class)\
-            .filter_by(zope_id=principal_id).first()
+        principal = (
+            session.query(self.principal_class).filter_by(zope_id=principal_id).first()
+        )
         if principal is None:
             return ()
 
@@ -747,13 +760,10 @@ class Plugin(BasePlugin, Cacheable):
 
     @security.private
     @graceful_recovery(())
-    def enumerateGroups(self, id=None,
-                        exact_match=False,
-                        sort_by=None,
-                        max_results=None,
-                        **kw
-                        ):
-        """ -> ( group_info_1, ... group_info_N )
+    def enumerateGroups(
+        self, id=None, exact_match=False, sort_by=None, max_results=None, **kw
+    ):
+        """-> ( group_info_1, ... group_info_N )
 
         o Return mappings for groups matching the given criteria.
 
@@ -796,9 +806,7 @@ class Plugin(BasePlugin, Cacheable):
         if id:
             kw["id"] = id
 
-        return self._enumerate(
-            self.group_class, exact_match, sort_by, max_results, kw
-        )
+        return self._enumerate(self.group_class, exact_match, sort_by, max_results, kw)
 
     ####################
     # IGroupManagement
@@ -813,7 +821,7 @@ class Plugin(BasePlugin, Cacheable):
         """
 
         if self.enumerateGroups(id):
-            raise KeyError('Duplicate group ID: %s' % id)
+            raise KeyError("Duplicate group ID: %s" % id)
 
         session = Session()
         group = self.group_class(zope_id=id)
@@ -835,13 +843,14 @@ class Plugin(BasePlugin, Cacheable):
         if group is None:
             return False
 
-        principal = session.query(self.principal_class)\
-            .filter_by(zope_id=principal_id).first()
+        principal = (
+            session.query(self.principal_class).filter_by(zope_id=principal_id).first()
+        )
 
         if principal is None:
             # Last chance:
             # maybe we are trying to add a users not handled by this plugin?
-            acl_users = getToolByName(self, 'acl_users')
+            acl_users = getToolByName(self, "acl_users")
             principal = acl_users.getUser(principal_id)
             if not principal:
                 return False
@@ -876,10 +885,10 @@ class Plugin(BasePlugin, Cacheable):
 
         session = Session()
 
-        group = session.query(self.group_class)\
-            .filter_by(zope_id=group_id).first()
-        user = session.query(self.principal_class)\
-            .filter_by(zope_id=principal_id).first()
+        group = session.query(self.group_class).filter_by(zope_id=group_id).first()
+        user = (
+            session.query(self.principal_class).filter_by(zope_id=principal_id).first()
+        )
 
         if group is None or user is None:
             return False
@@ -888,27 +897,28 @@ class Plugin(BasePlugin, Cacheable):
 
         # If user doesn't belongs to this plugin, garbage can be left behind
         # in that case we can have orphan items in the principals table
-        full_user = session.query(self.user_class).filter_by(id=user.id)\
-            .first()
-        relations_left = session.query(model.group_member_table).filter(
-            model.group_member_table.c.principal_id == user.id
-            ).count()
+        full_user = session.query(self.user_class).filter_by(id=user.id).first()
+        relations_left = (
+            session.query(model.group_member_table)
+            .filter(model.group_member_table.c.principal_id == user.id)
+            .count()
+        )
         if not full_user and relations_left == 0:
-            session.query(self.principal_class).filter_by(id=user.id)\
-                .delete()
+            session.query(self.principal_class).filter_by(id=user.id).delete()
         return True
 
     @security.private
     def updateGroup(self, group_id, title=None, description=None):
         session = Session()
-        principal = session.query(self.principal_class).\
-            filter_by(zope_id=group_id).first()
+        principal = (
+            session.query(self.principal_class).filter_by(zope_id=group_id).first()
+        )
         if title:
-            self.doSetProperty(principal, 'title', title)
+            self.doSetProperty(principal, "title", title)
         if description:
-            self.doSetProperty(principal, 'description', description)
+            self.doSetProperty(principal, "description", description)
 
-        view_name = createViewName('getPropertiesForUser', group_id)
+        view_name = createViewName("getPropertiesForUser", group_id)
         self.ZCacheable_invalidate(view_name=view_name)
 
     #
@@ -981,7 +991,7 @@ class Plugin(BasePlugin, Cacheable):
             for groups in self._get_groups_for_principal_from_pas(group):
                 group._addGroups(groups)
 
-            group._addRoles(['Authenticated'])
+            group._addRoles(["Authenticated"])
 
             return group.__of__(self)
         else:
@@ -1028,18 +1038,24 @@ class Plugin(BasePlugin, Cacheable):
     # implement addRole. (In addRole in pas).  The method is not
     # specified in the IRoleAssignerPlugin interface, so this is bad.
     @security.protected(ManageUsers)
-    def addRole(self, role_id, title='', description=''):
+    def addRole(self, role_id, title="", description=""):
         # We do not manage roles.
         raise AttributeError
 
     def _add_principal(self, zope_id, type="user"):
         session = Session()
-        new_principal = self.principal_class(type=type, zope_id=zope_id)
+        if type == "user":
+            cls = self.user_class
+        elif type == "group":
+            cls = self.group_class
+        else:
+            cls = self.principal_class
+        new_principal = cls(zope_id=zope_id)
         session.add(new_principal)
         return new_principal
 
     def _get_groups_for_principal_from_pas(self, principal):
-        plugins = self._getPAS()._getOb('plugins')
+        plugins = self._getPAS()._getOb("plugins")
 
         for name, plugin in plugins.listPlugins(pasplugins.IGroupsPlugin):
             groups = plugin.getGroupsForPrincipal(principal)
@@ -1047,7 +1063,7 @@ class Plugin(BasePlugin, Cacheable):
                 yield groups
 
     def _get_properties_for_user_from_pas(self, principal):
-        plugins = self._getPAS()._getOb('plugins')
+        plugins = self._getPAS()._getOb("plugins")
         propfinders = plugins.listPlugins(pasplugins.IPropertiesPlugin)
         for propfinder_id, propfinder in propfinders:
             data = propfinder.getPropertiesForUser(principal, request=None)
@@ -1055,7 +1071,7 @@ class Plugin(BasePlugin, Cacheable):
                 yield propfinder_id, data
 
     def _get_roles_for_principal_from_pas(self, principal):
-        plugins = self._getPAS()._getOb('plugins')
+        plugins = self._getPAS()._getOb("plugins")
         rolemakers = plugins.listPlugins(pasplugins.IRolesPlugin)
 
         for rolemaker_id, rolemaker in rolemakers:
@@ -1065,9 +1081,7 @@ class Plugin(BasePlugin, Cacheable):
 
     def _get_principal_by_id(self, principal_id):
         session = Session()
-        query = session.query(self.principal_class).filter_by(
-            zope_id=principal_id
-        )
+        query = session.query(self.principal_class).filter_by(zope_id=principal_id)
         return query.first()
 
 

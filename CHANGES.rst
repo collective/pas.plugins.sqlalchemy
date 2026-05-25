@@ -4,6 +4,9 @@ Changelog
 0.5 (unreleased)
 -----------------
 
+- Python 3 and SQLAlchemy 2.0 compatibility.
+  [erral, ilizarazu]
+
 - now require Products.PlonePAS >= 5.0.4.
   This is not the (current) version proposed by Plone 4.3, but is the version
   suggested by plone4.csrffixes hotfix, so probably all Plone 4.3 must move

@@ -53,7 +53,7 @@ class TestRecovery(unittest.TestCase):
 
 
 def test_suite():
-    from unittest import TestSuite, makeSuite
-    suite = TestSuite()
-    suite.addTest(makeSuite(TestRecovery))
+    import unittest
+    suite = unittest.TestSuite()
+    suite.addTest(unittest.defaultTestLoader.loadTestsFromTestCase(TestRecovery))
     return suite

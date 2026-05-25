@@ -17,7 +17,7 @@ requires = [
     'Products.PlonePAS>=5.0.1',
     ]
 
-tests_requires = requires + ['pysqlite', ]
+tests_requires = requires + []
 
 setup(
     name='pas.plugins.sqlalchemy',
@@ -29,9 +29,16 @@ setup(
         "Intended Audience :: Developers",
         "Framework :: Zope2",
         "Framework :: Plone",
-        "Framework :: Plone :: 4.3",
-        "Framework :: Plone :: 5.0",
+        "Framework :: Plone :: 5.1",
+        "Framework :: Plone :: 5.2",
+        "Framework :: Plone :: 6.0",
         "Programming Language :: Python",
+        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
         "Topic :: Internet :: WWW/HTTP",
         "Topic :: Internet :: WWW/HTTP :: WSGI",
         "Topic :: Internet :: WWW/HTTP :: WSGI :: Application",

@@ -60,7 +60,7 @@ class SQLLayer(object):
         # Setup the DB connection and PAS instances
         factory = EngineFactory('sqlite:///:memory:')
         engine = factory()
-        Base.metadata.bind = engine
+        cls.engine = engine
         Base.metadata.create_all(engine)
         cls.pas = cls.setupPAS(sandbox)
 
@@ -78,7 +78,7 @@ class SQLLayer(object):
     def tearDown(cls):
         from pas.plugins.sqlalchemy.model import Base
         Session()
-        Base.metadata.drop_all()
+        Base.metadata.drop_all(cls.engine)
         testing.tearDown()
         app = ZopeTestCase.app()
         app.manage_delObjects(SANDBOX_ID)

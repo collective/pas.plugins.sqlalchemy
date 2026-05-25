@@ -110,7 +110,7 @@ class TestRoleCaching(basetestcase.CacheTestCase):
         self.plugin.ZCacheable_setManagerId(basetestcase.CACHE_MANAGER_ID)
 
     def testIsCacheEnabled(self):
-        self.failUnless(self.plugin.ZCacheable_isCachingEnabled())
+        self.assertTrue(self.plugin.ZCacheable_isCachingEnabled())
 
     def testCacheStartsEmpty(self):
         view_name = createViewName(
@@ -119,7 +119,7 @@ class TestRoleCaching(basetestcase.CacheTestCase):
             view_name=view_name,
             default=_marker)
 
-        self.failUnless(user is _marker)
+        self.assertTrue(user is _marker)
 
     def testSingleQuery(self):
         user = TrivialUser(self.username)
@@ -129,7 +129,7 @@ class TestRoleCaching(basetestcase.CacheTestCase):
         user = self.plugin.ZCacheable_get(
             view_name=view_name,
             default=_marker)
-        self.failUnless(user is not _marker)
+        self.assertTrue(user is not _marker)
 
     def testTwoQueres(self):
         user = TrivialUser(self.username)
@@ -143,14 +143,14 @@ class TestRoleCaching(basetestcase.CacheTestCase):
         user = self.plugin.ZCacheable_get(
             view_name=view_name,
             default=_marker)
-        self.failUnless(user is not _marker)
+        self.assertTrue(user is not _marker)
 
         view_name = createViewName(
             'getRolesForPrincipal-IgnDirFalse-IgnGrpFalse', 'User1')
         user = self.plugin.ZCacheable_get(
             view_name=view_name,
             default=_marker)
-        self.failUnless(user is not _marker)
+        self.assertTrue(user is not _marker)
 
     def testAssignRoleZapsCache(self):
         user = TrivialUser(self.username)
@@ -161,7 +161,7 @@ class TestRoleCaching(basetestcase.CacheTestCase):
         user = self.plugin.ZCacheable_get(
             view_name=view_name,
             default=_marker)
-        self.failUnless(user is _marker)
+        self.assertTrue(user is _marker)
 
     def testAssignRoleKeepsCacheIfToldSo(self):
         user = TrivialUser(self.username)
@@ -172,7 +172,7 @@ class TestRoleCaching(basetestcase.CacheTestCase):
         user = self.plugin.ZCacheable_get(
             view_name=view_name,
             default=_marker)
-        self.failUnless(user is not _marker)
+        self.assertTrue(user is not _marker)
 
     def testAssignRolesZapsCache(self):
         user = TrivialUser(self.username)
@@ -183,7 +183,7 @@ class TestRoleCaching(basetestcase.CacheTestCase):
         user = self.plugin.ZCacheable_get(
             view_name=view_name,
             default=_marker)
-        self.failUnless(user is _marker)
+        self.assertTrue(user is _marker)
 
     def testDoRemoveRoleFromPrincipalZapsCache(self):
         self.plugin.doAddUser("User1", self.password)
@@ -198,19 +198,19 @@ class TestRoleCaching(basetestcase.CacheTestCase):
         user = self.plugin.ZCacheable_get(
             view_name=view_name,
             default=_marker)
-        self.failUnless(user is not _marker)
+        self.assertTrue(user is not _marker)
 
         self.plugin.doRemoveRoleFromPrincipal('User1', 'First')
 
         user = self.plugin.ZCacheable_get(
             view_name=view_name,
             default=_marker)
-        self.failUnless(user is _marker)
+        self.assertTrue(user is _marker)
 
 
 def test_suite():
-    from unittest import TestSuite, makeSuite
-    suite = TestSuite()
-    suite.addTest(makeSuite(TestRoleManager))
-    suite.addTest(makeSuite(TestRoleCaching))
+    import unittest
+    suite = unittest.TestSuite()
+    suite.addTest(unittest.defaultTestLoader.loadTestsFromTestCase(TestRoleManager))
+    suite.addTest(unittest.defaultTestLoader.loadTestsFromTestCase(TestRoleCaching))
     return suite

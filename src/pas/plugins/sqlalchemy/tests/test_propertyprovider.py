@@ -37,11 +37,11 @@ class TestPropertyProvider(basetestcase.BaseTestCase):
 
         user_name_column = self.source_properties.getProperty(
             'users_col_username')
-        self.failIf(props.hasProperty(user_name_column))
+        self.assertFalse(props.hasProperty(user_name_column))
 
         user_pass_column = self.source_properties.getProperty(
             'users_col_password')
-        self.failIf(props.hasProperty(user_pass_column))
+        self.assertFalse(props.hasProperty(user_pass_column))
 
     def testPropertyDefaultValue(self):
         props = self.source_properties.getPropertiesForUser(self.user)
@@ -85,7 +85,7 @@ class TestPropertyCaching(basetestcase.CacheTestCase):
         self.other_user = TrivialUser('user_2')
 
     def testIsCacheEnabled(self):
-        self.failUnless(self.plugin.ZCacheable_isCachingEnabled())
+        self.assertTrue(self.plugin.ZCacheable_isCachingEnabled())
 
     def testCacheStartsEmpty(self):
         view_name = createViewName('getPropertiesForUser', self.username)
@@ -93,7 +93,7 @@ class TestPropertyCaching(basetestcase.CacheTestCase):
             view_name=view_name,
             keywords=dict(auth=False),
             default=_marker)
-        self.failUnless(user is _marker)
+        self.assertTrue(user is _marker)
 
     def testCacheSingleQuery(self):
         self.plugin.getPropertiesForUser(self.user)
@@ -101,7 +101,7 @@ class TestPropertyCaching(basetestcase.CacheTestCase):
         user = self.plugin.ZCacheable_get(
             view_name=view_name,
             default=_marker)
-        self.failUnless(user is not _marker)
+        self.assertTrue(user is not _marker)
 
     def testCacheTwoQueries(self):
         self.plugin.getPropertiesForUser(self.user)
@@ -111,13 +111,13 @@ class TestPropertyCaching(basetestcase.CacheTestCase):
         user = self.plugin.ZCacheable_get(
             view_name=view_name,
             default=_marker)
-        self.failUnless(user is not _marker)
+        self.assertTrue(user is not _marker)
 
         view_name = createViewName('getPropertiesForUser', 'user_2')
         user = self.plugin.ZCacheable_get(
             view_name=view_name,
             default=_marker)
-        self.failUnless(user is not _marker)
+        self.assertTrue(user is not _marker)
 
     def testUpdateZapsCache(self):
         self.plugin.getPropertiesForUser(self.user)
@@ -132,12 +132,12 @@ class TestPropertyCaching(basetestcase.CacheTestCase):
             view_name=view_name,
             keywords=dict(auth=False),
             default=_marker)
-        self.failUnless(user is _marker)
+        self.assertTrue(user is _marker)
 
 
 def test_suite():
-    from unittest import TestSuite, makeSuite
-    suite = TestSuite()
-    suite.addTest(makeSuite(TestPropertyProvider))
-    suite.addTest(makeSuite(TestPropertyCaching))
+    import unittest
+    suite = unittest.TestSuite()
+    suite.addTest(unittest.defaultTestLoader.loadTestsFromTestCase(TestPropertyProvider))
+    suite.addTest(unittest.defaultTestLoader.loadTestsFromTestCase(TestPropertyCaching))
     return suite

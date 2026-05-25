@@ -31,8 +31,8 @@ from sqlalchemy import String
 from sqlalchemy import Table
 from sqlalchemy import Text
 from sqlalchemy.ext.associationproxy import association_proxy
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.ext.declarative import synonym_for
+from sqlalchemy.orm import declarative_base
+from sqlalchemy.orm import synonym_for
 from sqlalchemy.orm import relationship as relation
 from sqlalchemy.sql import functions
 from zope.interface import implementer
@@ -41,12 +41,12 @@ import string
 
 Base = declarative_base()
 
-group_member_table = Table('group_members', Base.metadata,
-                           Column('group_id', Integer, ForeignKey(
-                               'groups.id'), primary_key=True),
-                           Column('principal_id', Integer, ForeignKey(
-                               'principals.id'), primary_key=True),
-                           )
+group_member_table = Table(
+    "group_members",
+    Base.metadata,
+    Column("group_id", Integer, ForeignKey("groups.id"), primary_key=True),
+    Column("principal_id", Integer, ForeignKey("principals.id"), primary_key=True),
+)
 
 
 class Principal(Base):
@@ -56,7 +56,7 @@ class Principal(Base):
     type = Column(String(5), nullable=False, default="user")
     zope_id = Column(String(40), nullable=False, unique=True, index=True)
 
-    __mapper_args__ = {'polymorphic_on': type}
+    __mapper_args__ = {"polymorphic_on": type}
     _properties = [("id", "zope_id")]
 
     def getId(self):
@@ -74,18 +74,19 @@ class RoleAssignment(Base):
         self.name = name
 
     def __repr__(self):
-        return ("<RoleAssignment id=%s principal_id=%d name=%s>" % (
-            str(self.id), self.principal_id, self.name)).encode('utf-8')
+        return (
+            "<RoleAssignment id=%s principal_id=%d name=%s>"
+            % (str(self.id), self.principal_id, self.name)
+        ).encode("utf-8")
 
 
 @implementer(IUser, IEncryptedPasswordAware)
 class User(Principal):
 
     __tablename__ = "users"
-    __mapper_args__ = {'polymorphic_identity': 'user'}
+    __mapper_args__ = {"polymorphic_identity": "user"}
 
-    user_id = Column("id", Integer, ForeignKey(Principal.id),
-                     primary_key=True)
+    user_id = Column("id", Integer, ForeignKey(Principal.id), primary_key=True)
 
     login = Column(String(64), unique=True, index=True)
     # name = Column(String, unique=True) # is replaced by zope_id on the
@@ -96,45 +97,44 @@ class User(Principal):
 
     # roles
     _roles = relation(
-        RoleAssignment,
-        collection_class=set,
-        cascade="all, delete, delete-orphan"
+        RoleAssignment, collection_class=set, cascade="all, delete, delete-orphan"
     )
     roles = association_proxy("_roles", "name")
 
     # memberdata property sheet
-    email = Column(String(80), default=u"", index=True)
-    portal_skin = Column(String(20), default=u"")
+    email = Column(String(80), default="", index=True)
+    portal_skin = Column(String(20), default="")
     listed = Column(Integer, default=1)
     login_time = Column(DateTime(), default=functions.now())
     last_login_time = Column(DateTime(), default=functions.now())
-    fullname = Column(String(80), default=u"", index=True)
+    fullname = Column(String(80), default="", index=True)
     error_log_update = Column(Float, default=0)
-    home_page = Column(String(40), default=u"")
-    location = Column(String(40), default=u"")
-    description = Column(Text, default=u"")
-    language = Column(String(20), default=u"")
+    home_page = Column(String(40), default="")
+    location = Column(String(40), default="")
+    description = Column(Text, default="")
+    language = Column(String(20), default="")
     ext_editor = Column(Integer, default=0)
     wysiwyg_editor = Column(String(10), default="")
     visible_ids = Column(Integer, default=0)
 
-    _properties = [("id", "zope_id"),
-                   ("login", "login"),
-                   ("email", "email"),
-                   ("portal_skin", "portal_skin"),
-                   ("listed", "listed"),
-                   ("login_time", "login_time"),
-                   ("last_login_time", "last_login_time"),
-                   ("fullname", "fullname"),
-                   ("error_log_update", "error_log_update"),
-                   ("home_page", "home_page"),
-                   ("location", "location"),
-                   ("description", "description"),
-                   ("language", "language"),
-                   ("ext_editor", "ext_editor"),
-                   ("wysiwyg_editor", "wysiwyg_editor"),
-                   ("visible_ids", "visible_ids"),
-                   ]
+    _properties = [
+        ("id", "zope_id"),
+        ("login", "login"),
+        ("email", "email"),
+        ("portal_skin", "portal_skin"),
+        ("listed", "listed"),
+        ("login_time", "login_time"),
+        ("last_login_time", "last_login_time"),
+        ("fullname", "fullname"),
+        ("error_log_update", "error_log_update"),
+        ("home_page", "home_page"),
+        ("location", "location"),
+        ("description", "description"),
+        ("language", "language"),
+        ("ext_editor", "ext_editor"),
+        ("wysiwyg_editor", "wysiwyg_editor"),
+        ("visible_ids", "visible_ids"),
+    ]
 
     # Make password read-only
     @synonym_for("_password")
@@ -148,10 +148,10 @@ class User(Principal):
         return self._salt
 
     def generate_salt(self):
-        return ''.join(random.sample(string.letters, 12))
+        return "".join(random.sample(string.ascii_letters, 12))
 
     def encrypt(self, password):
-        return sha(password + self.salt).hexdigest()
+        return sha((password + self.salt).encode()).hexdigest()
 
     def set_password(self, password):
         self._salt = self.generate_salt()
@@ -161,27 +161,26 @@ class User(Principal):
         return self.encrypt(password) == self.password
 
     def __repr__(self):
-        return ("<User id=%s login=%s name=%s>" % (
-            str(self.id), self.login, self.zope_id)).encode('utf-8')
+        return "<User id=%s login=%s name=%s>" % (
+            str(self.id),
+            self.login,
+            self.zope_id,
+        )
 
 
 class Group(Principal):
     __tablename__ = "groups"
     __mapper_args__ = {"polymorphic_identity": "group"}
 
-    group_id = Column("id", Integer(), ForeignKey(Principal.id),
-                      primary_key=True)
-    title = Column(String(40), default=u"")
-    description = Column(String(40), default=u"")
-    email = Column(String(40), default=u"")
+    group_id = Column("id", Integer(), ForeignKey(Principal.id), primary_key=True)
+    title = Column(String(40), default="")
+    description = Column(String(40), default="")
+    email = Column(String(40), default="")
 
-    members = relation(
-        Principal, secondary=group_member_table, backref="groups")
+    members = relation(Principal, secondary=group_member_table, backref="groups")
 
     _roles = relation(
-        RoleAssignment,
-        collection_class=set,
-        cascade="all, delete, delete-orphan"
+        RoleAssignment, collection_class=set, cascade="all, delete, delete-orphan"
     )
     roles = association_proxy("_roles", "name")
 
@@ -193,6 +192,4 @@ class Group(Principal):
     ]
 
     def __repr__(self):
-        return ("<Group id=%s name=%s>" % (
-            str(self.id), self.zope_id)
-        ).encode('utf-8')
+        return ("<Group id=%s name=%s>" % (str(self.id), self.zope_id)).encode("utf-8")

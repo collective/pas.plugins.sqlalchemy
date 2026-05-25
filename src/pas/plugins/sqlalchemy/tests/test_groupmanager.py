@@ -191,22 +191,22 @@ class TestGroupManager(basetestcase.BaseTestCase):
     def testIGroupIntrospection_getGroupById_getGroups(self):
 
         group = self.source_groups.getGroupById(self.groupname)
-        self.failUnless(group is None)
+        self.assertTrue(group is None)
 
         # add group
         self.source_groups.addGroup(self.groupname)
 
         group = self.source_groups.getGroupById(self.groupname)
-        self.failIf(group is None)
-        self.failUnless(isinstance(group, PloneGroup))
+        self.assertFalse(group is None)
+        self.assertTrue(isinstance(group, PloneGroup))
 
         # add another group
         self.source_groups.addGroup(self.groupname + '1')
 
         groups = self.source_groups.getGroups()
         self.assertEqual(len(groups), 2)
-        self.failUnless(isinstance(groups[0], PloneGroup))
-        self.failUnless(isinstance(groups[1], PloneGroup))
+        self.assertTrue(isinstance(groups[0], PloneGroup))
+        self.assertTrue(isinstance(groups[1], PloneGroup))
 
         # Cleanup
         self.source_groups.removeGroup(self.groupname)
@@ -305,7 +305,7 @@ class TestGroupManager(basetestcase.BaseTestCase):
 
 
 def test_suite():
-    from unittest import TestSuite, makeSuite
-    suite = TestSuite()
-    suite.addTest(makeSuite(TestGroupManager))
+    import unittest
+    suite = unittest.TestSuite()
+    suite.addTest(unittest.defaultTestLoader.loadTestsFromTestCase(TestGroupManager))
     return suite

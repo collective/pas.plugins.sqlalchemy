@@ -137,8 +137,8 @@ class TestEnumerateUsers(basetestcase.BaseTestCase):
 
 
 def test_suite():
-    from unittest import TestSuite, makeSuite
-    suite = TestSuite()
-    suite.addTest(makeSuite(TestUserManager))
-    suite.addTest(makeSuite(TestEnumerateUsers))
+    import unittest
+    suite = unittest.TestSuite()
+    suite.addTest(unittest.defaultTestLoader.loadTestsFromTestCase(TestUserManager))
+    suite.addTest(unittest.defaultTestLoader.loadTestsFromTestCase(TestEnumerateUsers))
     return suite
